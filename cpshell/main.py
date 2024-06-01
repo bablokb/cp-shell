@@ -1358,9 +1358,10 @@ class Device(object):
     #self.root_dirs.append('/')
     QUIET or print(' '.join(self.root_dirs))
 
-    #QUIET or print('Setting time ... ', end='', flush=True)
-    #now = self.sync_time()
-    #QUIET or print(time.strftime('%b %d, %Y %H:%M:%S', now))
+    if SYNC_TIME:
+      QUIET or print('Setting time ... ', end='', flush=True)
+      now = self.sync_time()
+      QUIET or print(time.strftime('%b %d, %Y %H:%M:%S', now))
 
     #QUIET or print('Evaluating board_name ... ', end='', flush=True)
     #self.name, messages = self.remote_eval_last(board_name, self.default_board_name())
@@ -2732,18 +2733,12 @@ def real_main():
       default=default_editor
   )
   parser.add_argument(
-      "-f", "--file",
-      dest="filename",
-      help="Specifies a file of commands to process."
-  )
-  parser.add_argument(
       "-a", "--ascii",
       dest="ascii_xfer",
       action="store_true",
       help="ASCII encode binary files for transfer",
       default=False
   )
-
   parser.add_argument(
       "-n", "--nocolor",
       dest="nocolor",
@@ -2751,6 +2746,20 @@ def real_main():
       help="Turn off colorized output",
       default=default_nocolor
   )
+
+  parser.add_argument(
+      "-f", "--file",
+      dest="filename",
+      help="Specifies a file of commands to process."
+  )
+  parser.add_argument(
+    "-t", "--time",
+    dest="upd_time",
+    action='store_true',
+    help="set time on device (default for cp/rsync)",
+    default=False
+  )
+
   parser.add_argument(
       '-V', '--version',
       dest='version',
@@ -2766,7 +2775,7 @@ def real_main():
       default=True
   )
   parser.add_argument(
-      "--timing",
+      "-T", "--timing",
       dest="timing",
       action="store_true",
       help="Print timing information about each command",
@@ -2789,17 +2798,23 @@ def real_main():
   if args.buffer_size is not None:
     BUFFER_SIZE = args.buffer_size
 
+  if 'cp' in args.cmd or 'rsync' in args.cmd:
+    args.upd_time = True
+
   if args.debug:
-    print("Debug = %s" % args.debug)
     print("Port = %s" % args.port)
     print("Baud = %d" % args.baud)
     print("Wait = %d" % args.wait)
     print("List = %d" % args.list)
+    print(f"time = {args.upd_time}")
     print("nocolor = %d" % args.nocolor)
     print("ascii = %d" % args.ascii_xfer)
     print("Timing = %d" % args.timing)
-    print("Quiet = %d" % args.quiet)
     print("BUFFER_SIZE = %d" % BUFFER_SIZE)
+
+    print("Quiet = %d" % args.quiet)
+    print("Debug = %s" % args.debug)
+
     print("Cmd = [%s]" % ', '.join(args.cmd))
 
   if args.version:
@@ -2829,6 +2844,9 @@ def real_main():
 
   global ASCII_XFER
   ASCII_XFER = args.ascii_xfer
+
+  global SYNC_TIME
+  SYNC_TIME = args.upd_time
 
   if args.list:
     listports()
