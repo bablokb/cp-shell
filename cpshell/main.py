@@ -915,6 +915,8 @@ def rsync(src_dir, dst_dir, mirror, dry_run, print_func, recursed, sync_hidden):
   if not isinstance(src_dir, str) or not len(src_dir):
     return
 
+  if '__pycache__' in src_dir:       # ignore __pycache__
+    return
   sstat = auto(get_stat, src_dir)
   smode = stat_mode(sstat)
   if mode_isfile(smode):
@@ -927,6 +929,8 @@ def rsync(src_dir, dst_dir, mirror, dry_run, print_func, recursed, sync_hidden):
     print_err('Source directory {} does not exist.'.format(src_dir))
     return
   for name, stat in src_files:
+    if '__pycache__' in name:       # ignore __pycache__
+      continue
     d_src[name] = stat
 
   d_dst = {}
@@ -2108,6 +2112,8 @@ class Shell(cmd.Cmd):
         print_err("Only one pattern permitted.")
         return
       src_filename = resolve_path(src_filename)
+      if '__pycache__' in src_filename:              # don't copy __pycache__
+        continue
       src_mode = auto(get_mode, src_filename)
       if not mode_exists(src_mode):
         print_err("File '{}' doesn't exist".format(src_filename))
