@@ -652,6 +652,8 @@ def cp(src_filename, dst_filename):
   """
   src_dev, src_dev_filename = get_dev_and_path(src_filename)
   dst_dev, dst_dev_filename = get_dev_and_path(dst_filename)
+
+  QUIET or print(f"cp {src_filename} {dst_filename}")
   if src_dev is dst_dev:
     # src and dst are either on the same remote, or both are on the host
     return auto(copy_file, src_filename, dst_dev_filename)
@@ -668,16 +670,6 @@ def cp(src_filename, dst_filename):
     with open(src_dev_filename, 'rb') as src_file:
       return dst_dev.remote(recv_file_from_host, src_file, dst_dev_filename,
                             filesize, xfer_func=send_file_to_remote)
-
-  # Copying from remote A to remote B. We first copy the file
-  # from remote A to the host and then from the host to remote B
-  host_temp_file = tempfile.TemporaryFile()
-  if src_dev.remote(send_file_to_host, src_dev_filename, host_temp_file,
-                    filesize, xfer_func=recv_file_from_remote):
-    host_temp_file.seek(0)
-    return dst_dev.remote(recv_file_from_host, host_temp_file, dst_dev_filename,
-                          filesize, xfer_func=send_file_to_remote)
-  return False
 
 
 def date():
@@ -2145,7 +2137,6 @@ class Shell(cmd.Cmd):
         dst_filename = dst_dirname + '/' + os.path.basename(src_filename)
       else:
         dst_filename = dst_dirname
-      self.print("Copying '{}' to '{}' ...".format(src_filename, dst_filename))
       if not cp(src_filename, dst_filename):
         err = "Unable to copy '{}' to '{}'"
         print_err(err.format(src_filename, dst_filename))
