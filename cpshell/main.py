@@ -2685,6 +2685,13 @@ def real_main():
       epilog=("You can specify the default serial port using the " +
               "CPSHELL_PORT environment variable.")
   )
+
+  parser.add_argument(
+      "-p", "--port",
+      dest="port",
+      help="Set the serial port to use (default '%s')" % default_port,
+      default=default_port
+  )
   parser.add_argument(
       "-b", "--baud",
       dest="baud",
@@ -2692,6 +2699,14 @@ def real_main():
       type=int,
       help="Set the baudrate used (default = %d)" % default_baud,
       default=default_baud
+  )
+  parser.add_argument(
+      "-w", "--wait",
+      dest="wait",
+      type=int,
+      action="store",
+      help="Seconds to wait for serial port",
+      default=0
   )
   parser.add_argument(
       "--buffer-size",
@@ -2703,11 +2718,13 @@ def real_main():
            (USB_BUFFER_SIZE, UART_BUFFER_SIZE),
   )
   parser.add_argument(
-      "-p", "--port",
-      dest="port",
-      help="Set the serial port to use (default '%s')" % default_port,
-      default=default_port
+      "-l", "--list",
+      dest="list",
+      action="store_true",
+      help="Display serial ports",
+      default=False
   )
+
   parser.add_argument(
       "-e", "--editor",
       dest="editor",
@@ -2720,47 +2737,19 @@ def real_main():
       help="Specifies a file of commands to process."
   )
   parser.add_argument(
-      "-d", "--debug",
-      dest="debug",
-      action="store_true",
-      help="Enable debug features",
-      default=False
-  )
-  parser.add_argument(
-      "-n", "--nocolor",
-      dest="nocolor",
-      action="store_true",
-      help="Turn off colorized output",
-      default=default_nocolor
-  )
-  parser.add_argument(
-      "-l", "--list",
-      dest="list",
-      action="store_true",
-      help="Display serial ports",
-      default=False
-  )
-  parser.add_argument(
       "-a", "--ascii",
       dest="ascii_xfer",
       action="store_true",
       help="ASCII encode binary files for transfer",
       default=False
   )
+
   parser.add_argument(
-      "--wait",
-      dest="wait",
-      type=int,
-      action="store",
-      help="Seconds to wait for serial port",
-      default=0
-  )
-  parser.add_argument(
-      "--timing",
-      dest="timing",
+      "-n", "--nocolor",
+      dest="nocolor",
       action="store_true",
-      help="Print timing information about each command",
-      default=False
+      help="Turn off colorized output",
+      default=default_nocolor
   )
   parser.add_argument(
       '-V', '--version',
@@ -2775,6 +2764,20 @@ def real_main():
       action="store_false",
       help="Turns on some output (useful for testing)",
       default=True
+  )
+  parser.add_argument(
+      "--timing",
+      dest="timing",
+      action="store_true",
+      help="Print timing information about each command",
+      default=False
+  )
+  parser.add_argument(
+      "-d", "--debug",
+      dest="debug",
+      action="store_true",
+      help="Enable debug features",
+      default=False
   )
   parser.add_argument(
       "cmd",
