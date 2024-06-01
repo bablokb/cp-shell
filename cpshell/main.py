@@ -1255,8 +1255,7 @@ def add_arg(*args, **kwargs):
 
 def connect(port, baud=115200, wait=0):
   """Connect to a CircuitPython board via a serial port."""
-  if not QUIET:
-    print('Connecting to %s (buffer-size %d)...' % (port, BUFFER_SIZE))
+  DEBUG and print('Connecting to %s (buffer-size %d)...' % (port, BUFFER_SIZE))
   try:
     dev = DeviceSerial(port, baud, wait)
   except DeviceError as err:
@@ -1345,15 +1344,14 @@ class Device(object):
     #self.sysname = self.remote_eval(sysname)
     #QUIET or print(self.sysname)
 
-    QUIET or print('Retrieving root directories ... ', end='', flush=True)
+    DEBUG and print('Retrieving root directories ... ', end='', flush=True)
     self.root_dirs = ['/{}/'.format(dir) for dir in self.remote_eval(listdir, '/')]
-    #self.root_dirs.append('/')
-    QUIET or print(' '.join(self.root_dirs))
+    DEBUG and print(' '.join(self.root_dirs))
 
     if SYNC_TIME:
-      QUIET or print('Setting time ... ', end='', flush=True)
+      DEBUG and print('Setting time ... ', end='', flush=True)
       now = self.sync_time()
-      QUIET or print(time.strftime('%b %d, %Y %H:%M:%S', now))
+      DEBUG and print(time.strftime('%b %d, %Y %H:%M:%S', now))
 
     #QUIET or print('Evaluating board_name ... ', end='', flush=True)
     #self.name, messages = self.remote_eval_last(board_name, self.default_board_name())
@@ -2850,7 +2848,7 @@ def real_main():
         BUFFER_SIZE = USB_BUFFER_SIZE
       else:
         BUFFER_SIZE = UART_BUFFER_SIZE
-    QUIET or print('Using buffer-size of', BUFFER_SIZE)
+    DEBUG and print('Using buffer-size of', BUFFER_SIZE)
     try:
       connect(args.port, baud=args.baud, wait=args.wait)
     except DeviceError as err:
