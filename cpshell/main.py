@@ -2764,11 +2764,11 @@ def real_main():
       default=False
   )
   parser.add_argument(
-      "--quiet",
+      "-v", "--verbose",
       dest="quiet",
-      action="store_true",
-      help="Turns off some output (useful for testing)",
-      default=False
+      action="store_false",
+      help="Turns on some output (useful for testing)",
+      default=True
   )
   parser.add_argument(
       "cmd",
