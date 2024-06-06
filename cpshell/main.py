@@ -1343,7 +1343,7 @@ class Device(object):
 
   def __init__(self, cpb):
     self.cpb = cpb
-    self.time_offset = 0
+    self.time_offset = -time.localtime().tm_gmtoff
     self.adjust_for_timezone = False
 
     #self.sysname = ''
