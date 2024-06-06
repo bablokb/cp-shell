@@ -943,7 +943,8 @@ def rsync(src_dir, dst_dir, mirror, dry_run, print_func, recursed, sync_hidden):
   for src_basename in to_add:  # Name in source but absent from destination
     src_filename = src_dir + '/' + src_basename
     dst_filename = dst_dir + '/' + src_basename
-    print_func("Adding %s" % dst_filename)
+    if dry_run or DEBUG:
+      print_func("Adding %s" % dst_filename)
     src_stat = d_src[src_basename]
     src_mode = stat_mode(src_stat)
     if not dry_run:
@@ -956,7 +957,8 @@ def rsync(src_dir, dst_dir, mirror, dry_run, print_func, recursed, sync_hidden):
   if mirror:  # May delete
     for dst_basename in to_del:  # In dest but not in source
       dst_filename = dst_dir + '/' + dst_basename
-      print_func("Removing %s" % dst_filename)
+      if dry_run or DEBUG:
+        print_func("Removing %s" % dst_filename)
       if not dry_run:
         rm(dst_filename, recursive=True, force=True)
 
@@ -982,7 +984,8 @@ def rsync(src_dir, dst_dir, mirror, dry_run, print_func, recursed, sync_hidden):
               "'{}' is a directory. Ignoring"
         print_err(msg.format(src_filename, dst_filename))
       else:
-        print_func('Checking {}'.format(dst_filename))
+        if dry_run or DEBUG:
+          print_func('Checking {}'.format(dst_filename))
         if stat_mtime(src_stat) > stat_mtime(dst_stat):
           msg = "{} is newer than {} - copying"
           print_func(msg.format(src_filename, dst_filename))
