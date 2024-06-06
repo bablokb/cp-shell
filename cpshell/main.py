@@ -2659,7 +2659,12 @@ def real_main():
     default_baud = int(os.getenv('CPSHELL_BAUD'))
   except:
     default_baud = 115200
-  default_port = os.getenv('CPSHELL_PORT') or '/dev/ttyACM0'
+  default_port = os.getenv('CPSHELL_PORT')
+  if not default_port:
+    if os.path.exists('/dev/ttyUSB0'):
+      default_port = '/dev/ttyUSB0'
+    elif os.path.exists('/dev/ttyACM0'):
+      default_port = '/dev/ttyACM0'
   default_editor = os.getenv('CPSHELL_EDITOR') or os.getenv('VISUAL') or os.getenv('EDITOR') or 'vi'
   default_color = sys.stdout.isatty()
   default_nocolor = not default_color
