@@ -1127,16 +1127,6 @@ def send_file_to_host(src_filename, dst_file, filesize):
   except:
     return False
 
-def get_time_epoch():
-  """Determines the epoch used by the CircuitPython board."""
-  import time
-  try:
-    return time.gmtime(0)
-  except:
-    """Assume its a board, with an epoch of 2000."""
-    return (2000, 1, 1, 0, 0, 0, 0, 0)
-
-
 def mode_exists(mode):
   return mode & 0xc000 != 0
 
@@ -1344,7 +1334,6 @@ class Device(object):
   def __init__(self, cpb):
     self.cpb = cpb
     self.time_offset = -time.localtime().tm_gmtoff
-    self.adjust_for_timezone = False
 
     #self.sysname = ''
     #QUIET or print('Retrieving sysname ... ', end='', flush=True)
@@ -1369,17 +1358,6 @@ class Device(object):
     #  print('----')
     #self.dev_name_short = self.name
 
-    #QUIET or print('Retrieving time epoch ... ', end='', flush=True)
-    #epoch_tuple = self.remote_eval(get_time_epoch)
-    #if len(epoch_tuple) == 8:
-    #  epoch_tuple = epoch_tuple + (0,)
-    #QUIET or print(time.strftime('%b %d, %Y', epoch_tuple))
-
-    #self.time_offset = calendar.timegm(epoch_tuple)
-    # The board maintains its time as localtime, whereas unix and
-    # esp32 maintain their time as GMT
-    #self.adjust_for_timezone = (epoch_tuple[0] != 1970)
-    self.adjust_for_timezone = False
 
 
   def check_cpb(self):
@@ -1444,10 +1422,7 @@ class Device(object):
     func_src += '  print("None")\n'
     func_src += 'else:\n'
     func_src += '  print(output)\n'
-    time_offset = self.time_offset
-    if self.adjust_for_timezone:
-      time_offset -= time.localtime().tm_gmtoff
-    func_src = func_src.replace('TIME_OFFSET', '{}'.format(time_offset))
+    func_src = func_src.replace('TIME_OFFSET', '{}'.format(self.time_offset))
     func_src = func_src.replace('BUFFER_SIZE', '{}'.format(BUFFER_SIZE))
     if DEBUG:
       print('----- About to send %d bytes of code to the board -----' % len(func_src))
@@ -1983,8 +1958,7 @@ class Shell(cmd.Cmd):
           dirs = []
         dirs += ['/{}{}'.format(dev.name, dir)[:-1] for dir in dev.root_dirs]
         dirs = 'Dirs: ' + ' '.join(dirs)
-        epoch = 'Epoch: {}'.format(time.gmtime(dev.time_offset)[0])
-        rows.append((dev.name, '@ %s' % dev.dev_name_short, dev.status(), epoch, dirs))
+        rows.append((dev.name, '@ %s' % dev.dev_name_short, dev.status(), dirs))
     if rows:
       column_print('<<<< ', rows, self.print)
     else:
