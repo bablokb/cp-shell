@@ -1349,9 +1349,9 @@ class Device(object):
     DEBUG and print(' '.join(self.root_dirs))
 
     if SYNC_TIME:
-      DEBUG and print('Setting time ... ', end='', flush=True)
+      QUIET or print('Setting time ... ', end='', flush=True)
       now = self.sync_time()
-      DEBUG and print(time.strftime('%b %d, %Y %H:%M:%S', now))
+      QUIET or print(time.strftime('%b %d, %Y %H:%M:%S', now))
 
     #QUIET or print('Evaluating board_name ... ', end='', flush=True)
     #self.name, messages = self.remote_eval_last(board_name, self.default_board_name())
@@ -2792,7 +2792,7 @@ def real_main():
   if args.buffer_size is not None:
     BUFFER_SIZE = args.buffer_size
 
-  if 'cp' in args.cmd or 'rsync' in args.cmd:
+  if not len(args.cmd) or 'cp' in args.cmd or 'rsync' in args.cmd:
     args.upd_time = True
 
   if args.debug:
