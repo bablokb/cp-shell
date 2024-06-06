@@ -861,6 +861,7 @@ def remove_file(filename, recursive=False, force=False):
     if mode & 0x4000 != 0:
       # directory
       if recursive:
+        QUIET or print(f"rm -r {filename}")
         for file in os.listdir(filename):
           success = remove_file(filename + '/' + file, recursive, force)
           if not success and not force:
@@ -870,6 +871,7 @@ def remove_file(filename, recursive=False, force=False):
         if not force:
           return False
     else:
+      QUIET or print(f"rm {filename}")
       os.remove(filename)
   except:
     if not force:
@@ -894,6 +896,8 @@ def make_dir(dst_dir, dry_run, print_func, recursed):
     elif parent_files is None:
       print_func("Unable to create {}".format(dst_dir))
     return True
+
+  QUIET or print(f"mkdir {dst_dir}")
   if not mkdir(dst_dir):
     print_err("Unable to create {}".format(dst_dir))
     return False
