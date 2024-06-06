@@ -2897,6 +2897,8 @@ def main():
     pass
   try:
     real_main()
+  except KeyboardInterrupt:
+    print()
   finally:
     if save_settings:
       termios.tcsetattr(stdin_fd, termios.TCSANOW, save_settings)
