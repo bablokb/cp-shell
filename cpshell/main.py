@@ -2370,44 +2370,41 @@ class Shell(cmd.Cmd):
       if not mkdir(filename):
         print_err('Unable to create %s' % filename)
 
-        def repl_serial_to_stdout(self, dev):
-          """Runs as a thread which has a sole purpose of readding bytes from
-            the serial port and writing them to stdout. Used by do_repl.
-          """
-          with self.serial_reader_running:
-            try:
-              save_timeout = dev.timeout
-              # Set a timeout so that the read returns periodically with no data
-              # and allows us to check whether the main thread wants us to quit.
-              dev.timeout = 1
-              while not self.quit_serial_reader:
-                try:
-                  char = dev.read(1)
-                except serial.serialutil.SerialException:
-                  # This happens if the board reboots, or a USB port
-                  # goes away.
-                  return
-                except TypeError:
-                  # This is a bug in serialposix.py starting with python 3.3
-                  # which causes a TypeError during the handling of the
-                  # select.error. So we treat this the same as
-                  # serial.serialutil.SerialException:
-                  return
-                except ConnectionResetError:
-                  # This happens over a telnet session, if it resets
-                  return
-                if not char:
-                  # This means that the read timed out. We'll check the quit
-                  # flag and return if needed
-                  if self.quit_when_no_output:
-                    break
-                  continue
-                self.stdout.write(char)
-                self.stdout.flush()
-              dev.timeout = save_timeout
-            except DeviceError:
-              # The device is no longer present.
-              return
+  def repl_serial_to_stdout(self, dev):
+    """Runs as a thread which has a sole purpose of reading bytes from
+      the serial port and writing them to stdout. Used by do_repl.
+    """
+    with self.serial_reader_running:
+      try:
+        save_timeout = dev.timeout
+        # Set a timeout so that the read returns periodically with no data
+        # and allows us to check whether the main thread wants us to quit.
+        dev.timeout = 1
+        while not self.quit_serial_reader:
+          try:
+            char = dev.read(1)
+          except serial.serialutil.SerialException:
+            # This happens if the board reboots, or a USB port
+            # goes away.
+            return
+          except TypeError:
+            # This is a bug in serialposix.py starting with python 3.3
+            # which causes a TypeError during the handling of the
+            # select.error. So we treat this the same as
+            # serial.serialutil.SerialException:
+            return
+          if not char:
+            # This means that the read timed out. We'll check the quit
+            # flag and return if needed
+            if self.quit_when_no_output:
+              break
+            continue
+          self.stdout.write(char)
+          self.stdout.flush()
+        dev.timeout = save_timeout
+      except DeviceError:
+        # The device is no longer present.
+        return
 
   def do_repl(self, line):
     """repl [board-name] [~ line [~]]
