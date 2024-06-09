@@ -2729,13 +2729,6 @@ def real_main():
       default=default_editor
   )
   parser.add_argument(
-      "-a", "--ascii",
-      dest="ascii_xfer",
-      action="store_true",
-      help="ASCII encode binary files for transfer",
-      default=False
-  )
-  parser.add_argument(
       "-n", "--nocolor",
       dest="nocolor",
       action="store_true",
@@ -2810,7 +2803,6 @@ def real_main():
     print("List = %d" % args.list)
     print(f"time = {args.upd_time}")
     print("nocolor = %d" % args.nocolor)
-    print("ascii = %d" % args.ascii_xfer)
     print("Timing = %d" % args.timing)
     print("BUFFER_SIZE = %d" % BUFFER_SIZE)
     print(f"cp_locale = {args.cp_locale}")
@@ -2845,9 +2837,6 @@ def real_main():
       global FAKE_INPUT_PROMPT
       FAKE_INPUT_PROMPT = True
 
-  global ASCII_XFER
-  ASCII_XFER = args.ascii_xfer
-
   global SYNC_TIME
   SYNC_TIME = args.upd_time
 
@@ -2865,7 +2854,6 @@ def real_main():
     return
 
   if args.port:
-    ASCII_XFER = True
     if args.buffer_size is None:
       if is_circuitpython_usb_port(args.port):
         BUFFER_SIZE = USB_BUFFER_SIZE
