@@ -2887,10 +2887,9 @@ def real_main():
     except KeyboardInterrupt:
       print('')
 
-def main():
-  """This main function saves the stdin termios settings, calls real_main,
-    and restores stdin termios settings when it returns.
-  """
+# --- main program   ---------------------------------------------------------
+
+if __name__ == "__main__":
   save_settings = None
   stdin_fd = -1
   try:
@@ -2908,6 +2907,3 @@ def main():
   finally:
     if save_settings:
       termios.tcsetattr(stdin_fd, termios.TCSANOW, save_settings)
-
-if __name__ == "__main__":
-  main()
