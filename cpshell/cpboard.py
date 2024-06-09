@@ -1,4 +1,16 @@
-#!/usr/bin/env python3
+# -------------------------------------------------------------------------
+# This is a port of rshell (https://github.com/dhylands/rshell) to CircuitPython.
+#
+# Besides some changes necessary due to CircuitPython, I also removed some
+# code specific to MicroPython and everything related to telnet. In addition,
+# there was some streamlining done.
+#
+# Author: Bernhard Bablok
+# Original Author: Dave Hylands
+# License: MIT
+#
+# Website: https://github.com/bablokb/cp-shell
+# -------------------------------------------------------------------------
 
 """
 cpboard interface
@@ -42,14 +54,15 @@ def stdout_write_bytes(b):
   stdout.write(b)
   stdout.flush()
 
-class CpBoardError(BaseException):
+class CpBoardError(Exception):
   pass
 
 def parse_bool(str):
   return str == '1' or str.lower() == 'true'
 
 class CpBoard:
-  def __init__(self, port, baudrate=115200, wait=0):
+  def __init__(self, port, baudrate=115200, wait=0, soft_reboot=None):
+    self._soft_reboot = soft_reboot if soft_reboot else b'soft reboot\r\n'
     import serial
     delayed = False
     self.serial = serial.Serial(baudrate=baudrate, inter_byte_timeout=1)
@@ -119,27 +132,10 @@ class CpBoard:
 
     #print("CTRL-D")
     self.serial.write(b'\x04') # ctrl-D: soft reset
-    data = self.read_until(1, b'weicher reboot\r\n',timeout=1)
-    if not data.endswith(b'weicher reboot\r\n'):
-      #print("  kein 'weicher reboot'")
-      #print("CTRL-D")
-      self.serial.write(b'\x04') # ctrl-D: soft reset
-      data = self.read_until(1, b'soft reboot\r\n',timeout=1)
-    else:
-      #print("  'weicher reboot'")
-      pass
-    if not (data.endswith(b'soft reboot\r\n') or
-            data.endswith(b'weicher reboot\r\n')):
-      #print("  kein 'soft reboot/weicher reboot'")
-      # we ignore this error because CP does not always print
-      # print(data)
-      # raise CpBoardError('could not enter raw repl')
-      #pass
-      #print("CTRL-A")
-      self.serial.write(b'\r\x01') # ctrl-A: enter raw REPL
-    else:
-      #print("  'soft reboot'")
-      pass
+    data = self.read_until(1,self._soft_reboot,timeout=1)
+    if not data.endswith(self._soft_reboot):
+      #print(data)
+      raise CpBoardError('could not enter raw repl')
     # By splitting this into 2 reads, it allows boot.py to print stuff,
     # which will show up after the soft reboot and before the raw REPL.
     data = self.read_until(1, b'raw REPL; CTRL-B to exit\r\n')

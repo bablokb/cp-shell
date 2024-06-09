@@ -1,4 +1,16 @@
-#!/usr/bin/env python3
+# -------------------------------------------------------------------------
+# This is a port of rshell (https://github.com/dhylands/rshell) to CircuitPython.
+#
+# Besides some changes necessary due to CircuitPython, I also removed some
+# code specific to MicroPython and everything related to telnet. In addition,
+# there was some streamlining done.
+#
+# Author: Bernhard Bablok
+# Original Author: Dave Hylands
+# License: MIT
+#
+# Website: https://github.com/bablokb/cp-shell
+# -------------------------------------------------------------------------
 
 """Implement a remote shell which talks to a CircuitPython board.
 
@@ -22,6 +34,7 @@ import sys
 try:
   from cpshell.getch import getch
   from cpshell.cpboard import CpBoard, CpBoardError
+  from cpshell.cplocale import CP_LOCALE
   from cpshell.version import __version__
 except ImportError as err:
   print('sys.path =', sys.path)
@@ -147,6 +160,7 @@ RPI_PICO_USB_BUFFER_SIZE = 32
 UART_BUFFER_SIZE = 32
 BUFFER_SIZE = USB_BUFFER_SIZE
 QUIET = False
+SOFT_REBOOT = None
 
 # It turns out that just because pyudev is installed doesn't mean that
 # it can actually be used. So we only bother to try if we're running
@@ -1442,16 +1456,17 @@ class Device(object):
       output, _ = self.cpb.follow(timeout=20)
       self.check_cpb()
       self.cpb.exit_raw_repl()
+      if DEBUG:
+        print('-----Response-----')
+        print(output)
+        print('------------------')
+      return output
     except (serial.serialutil.SerialException, TypeError):
-      self.close()
       raise DeviceError('serial port %s closed' % self.dev_name_short)
     except:
       self.cpb.exit_raw_repl()
-    if DEBUG:
-      print('-----Response-----')
-      print(output)
-      print('-----')
-    return output
+      self.close()
+      raise
 
   def remote_eval(self, func, *args, **kwargs):
     """Calls func with the indicated args on the CircuitPython board, and
@@ -1528,7 +1543,7 @@ class DeviceSerial(Device):
     self.dev_name_long = '%s at %d baud' % (port, baud)
 
     try:
-      cpb = CpBoard(port, baudrate=baud, wait=wait)
+      cpb = CpBoard(port, baudrate=baud, wait=wait, soft_reboot=SOFT_REBOOT)
     except CpBoardError as err:
       print(err)
       sys.exit(1)
@@ -2653,6 +2668,13 @@ def real_main():
     default_buffer_size = int(os.getenv('CPSHELL_BUFFER_SIZE'))
   except:
     default_buffer_size = BUFFER_SIZE
+
+  try:
+    import locale
+    host_locale = locale.getlocale()[0]
+  except:
+    host_locale = 'en_US'
+
   parser = argparse.ArgumentParser(
       prog="cpshell",
       usage="%(prog)s [options] [command]",
@@ -2720,6 +2742,12 @@ def real_main():
       help="Turn off colorized output",
       default=default_nocolor
   )
+  parser.add_argument(
+      "-L", "--locale",
+      dest="cp_locale",
+      help=f"The language (locale) of the CP-device (default: {host_locale})",
+      default=host_locale
+  )
 
   parser.add_argument(
       "-f", "--file",
@@ -2785,6 +2813,7 @@ def real_main():
     print("ascii = %d" % args.ascii_xfer)
     print("Timing = %d" % args.timing)
     print("BUFFER_SIZE = %d" % BUFFER_SIZE)
+    print(f"cp_locale = {args.cp_locale}")
 
     print("Quiet = %d" % args.quiet)
     print("Debug = %s" % args.debug)
@@ -2822,6 +2851,15 @@ def real_main():
   global SYNC_TIME
   SYNC_TIME = args.upd_time
 
+  # we need the locale for the (localized) "soft reboot" message
+  global SOFT_REBOOT
+  if args.cp_locale in CP_LOCALE:
+    SOFT_REBOOT = CP_LOCALE[args.cp_locale]
+  elif args.cp_locale.split("_")[0] in CP_LOCALE:
+    SOFT_REBOOT = CP_LOCALE[args.cp_locale.split("_")[0]]
+  else:
+    SOFT_REBOOT = None
+
   if args.list:
     listports()
     return
@@ -2836,8 +2874,9 @@ def real_main():
     DEBUG and print('Using buffer-size of', BUFFER_SIZE)
     try:
       connect(args.port, baud=args.baud, wait=args.wait)
-    except DeviceError as err:
-      print(err)
+    except Exception as ex:
+      DEBUG and print(ex)
+      raise
   else:
     autoscan()
   autoconnect()
@@ -2876,6 +2915,8 @@ def main():
     real_main()
   except KeyboardInterrupt:
     print()
+  except Exception as ex:
+    print(f"{ex.args[0]}")
   finally:
     if save_settings:
       termios.tcsetattr(stdin_fd, termios.TCSANOW, save_settings)
