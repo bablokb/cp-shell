@@ -34,7 +34,6 @@ import sys
 try:
   from cpshell.getch import getch
   from cpshell.cpboard import CpBoard, CpBoardError
-  from cpshell.cplocale import CP_LOCALE
   from cpshell.version import __version__
 except ImportError as err:
   print('sys.path =', sys.path)
@@ -87,80 +86,18 @@ else:
 # column of the input it wipes out the prompt, but everything returns to normal
 # if you hit return.
 
-BROKEN_READLINE = True
-FAKE_INPUT_PROMPT = False
-
 import readline
 import rlcompleter
 if readline.__doc__ and 'libedit' in readline.__doc__:
   readline.parse_and_bind ("bind ^I rl_complete")
-  BROKEN_READLINE = True
 else:
   readline.parse_and_bind("tab: complete")
 
 MONTH = ('', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')
 
-# Attributes
-# 0 Reset all attributes
-# 1 Bright
-# 2 Dim
-# 4 Underscore
-# 5 Blink
-# 7 Reverse
-# 8 Hidden
-
-LT_BLACK = "\x1b[1;30m"
-LT_RED = "\x1b[1;31m"
-LT_GREEN = "\x1b[1;32m"
-LT_YELLOW = "\x1b[1;33m"
-LT_BLUE = "\x1b[1;34m"
-LT_MAGENTA = "\x1b[1;35m"
-LT_CYAN = "\x1b[1;36m"
-LT_WHITE = "\x1b[1;37m"
-
-DK_BLACK = "\x1b[2;30m"
-DK_RED = "\x1b[2;31m"
-DK_GREEN = "\x1b[2;32m"
-DK_YELLOW = "\x1b[2;33m"
-DK_BLUE = "\x1b[2;34m"
-DK_MAGENTA = "\x1b[2;35m"
-DK_CYAN = "\x1b[2;36m"
-DK_WHITE = "\x1b[2;37m"
-
-NO_COLOR = "\x1b[0m"
-BG_LT_BLACK = "\x1b[1;40m"
-BG_LT_RED = "\x1b[1;41m"
-BG_LT_GREEN = "\x1b[1;42m"
-BG_LT_YELLOW = "\x1b[1;43m"
-BG_LT_BLUE = "\x1b[1;44m"
-BG_LT_MAGENTA = "\x1b[1;45m"
-BG_LT_CYAN = "\x1b[1;46m"
-BG_LT_WHITE = "\x1b[1;47m"
-
-BG_DK_BLACK = "\x1b[2;40m"
-BG_DK_RED = "\x1b[2;41m"
-BG_DK_GREEN = "\x1b[2;42m"
-BG_DK_YELLOW = "\x1b[2;43m"
-BG_DK_BLUE = "\x1b[2;44m"
-BG_DK_MAGENTA = "\x1b[2;45m"
-BG_DK_CYAN = "\x1b[2;46m"
-BG_DK_WHITE = "\x1b[2;47m"
-
-DIR_COLOR = LT_CYAN
-PROMPT_COLOR = LT_GREEN
-PY_COLOR = DK_GREEN
-END_COLOR = NO_COLOR
 
 cur_dir = ''
-
-DEBUG = False
-USB_BUFFER_SIZE = 512
-RPI_PICO_USB_BUFFER_SIZE = 32
-UART_BUFFER_SIZE = 32
-BUFFER_SIZE = USB_BUFFER_SIZE
-QUIET = False
-SOFT_REBOOT = None
 
 # It turns out that just because pyudev is installed doesn't mean that
 # it can actually be used. So we only bother to try if we're running
@@ -253,8 +190,6 @@ def is_circuitpython_usb_device(port):
     return True
   # Check Raspberry Pi Pico
   if usb_id.startswith('usb vid:pid=2e8a:0005'):
-    global USB_BUFFER_SIZE
-    USB_BUFFER_SIZE = RPI_PICO_USB_BUFFER_SIZE
     return True
   # Check for Teensy VID:PID
   if usb_id.startswith('usb vid:pid=16c0:0483'):
@@ -667,7 +602,7 @@ def cp(src_filename, dst_filename):
   src_dev, src_dev_filename = get_dev_and_path(src_filename)
   dst_dev, dst_dev_filename = get_dev_and_path(dst_filename)
 
-  QUIET or print(f"cp {src_filename} {dst_filename}")
+  main_options.verbose and print(f"cp {src_filename} {dst_filename}")
   if src_dev is dst_dev:
     # src and dst are either on the same remote, or both are on the host
     return auto(copy_file, src_filename, dst_dev_filename)
@@ -894,9 +829,9 @@ def remove_file(filename, recursive=False, force=False):
 def rm(filename, recursive=False, force=False):
   """Removes a file or directory tree."""
   if recursive:
-    QUIET or print(f"rm -r {filename}")
+    main_options.verbose and print(f"rm -r {filename}")
   else:
-    QUIET or print(f"rm {filename}")
+    main_options.verbose and print(f"rm {filename}")
   return auto(remove_file, filename, recursive, force)
 
 
@@ -913,7 +848,7 @@ def make_dir(dst_dir, dry_run, print_func, recursed):
       print_func("Unable to create {}".format(dst_dir))
     return True
 
-  QUIET or print(f"mkdir {dst_dir}")
+  main_options.verbose and print(f"mkdir {dst_dir}")
   if not mkdir(dst_dir):
     print_err("Unable to create {}".format(dst_dir))
     return False
@@ -963,7 +898,7 @@ def rsync(src_dir, dst_dir, mirror, dry_run, print_func, recursed, sync_hidden):
   for src_basename in to_add:  # Name in source but absent from destination
     src_filename = src_dir + '/' + src_basename
     dst_filename = dst_dir + '/' + src_basename
-    if dry_run or DEBUG:
+    if dry_run or main_options.debug:
       print_func("Adding %s" % dst_filename)
     src_stat = d_src[src_basename]
     src_mode = stat_mode(src_stat)
@@ -977,7 +912,7 @@ def rsync(src_dir, dst_dir, mirror, dry_run, print_func, recursed, sync_hidden):
   if mirror:  # May delete
     for dst_basename in to_del:  # In dest but not in source
       dst_filename = dst_dir + '/' + dst_basename
-      if dry_run or DEBUG:
+      if dry_run or main_options.debug:
         print_func("Removing %s" % dst_filename)
       if not dry_run:
         rm(dst_filename, recursive=True, force=True)
@@ -1004,7 +939,7 @@ def rsync(src_dir, dst_dir, mirror, dry_run, print_func, recursed, sync_hidden):
               "'{}' is a directory. Ignoring"
         print_err(msg.format(src_filename, dst_filename))
       else:
-        if dry_run or DEBUG:
+        if dry_run or main_options.debug:
           print_func('Checking {}'.format(dst_filename))
         if stat_mtime(src_stat) > stat_mtime(dst_stat):
           msg = "{} is newer than {} - copying"
@@ -1082,7 +1017,7 @@ def send_file_to_remote(dev, src_file, dst_filename, filesize, dst_mode='wb'):
     if ack is None or ack != b'\x06':
       raise RuntimeError("timed out or error in transfer to remote: {!r}\n".format(ack))
 
-    buf_size = BUFFER_SIZE // 2
+    buf_size = main_options.buffer_size // 2
     read_size = min(bytes_remaining, buf_size)
     buf = src_file.read(read_size)
     #sys.stdout.write('\r%d/%d' % (filesize - bytes_remaining, filesize))
@@ -1099,7 +1034,7 @@ def recv_file_from_remote(dev, src_filename, dst_file, filesize):
   """
   bytes_remaining = filesize
   bytes_remaining *= 2  # hexlify makes each byte into 2
-  buf_size = BUFFER_SIZE
+  buf_size = main_options.buffer_size
   write_buf = bytearray(buf_size)
   while bytes_remaining > 0:
     read_size = min(bytes_remaining, buf_size)
@@ -1207,11 +1142,11 @@ def decorated_filename(filename, stat):
   """
   mode = stat[0]
   if mode_isdir(mode):
-    return DIR_COLOR + filename + END_COLOR + '/'
+    return main_options.dir_color + filename + main_options.end_color + '/'
   if mode_issymlink(mode):
     return filename + '@'
   if filename.endswith('.py'):
-    return PY_COLOR + filename + END_COLOR
+    return main_options.py_color + filename + main_options.end_color
   return filename
 
 
@@ -1268,7 +1203,8 @@ def add_arg(*args, **kwargs):
 
 def connect(port, baud=115200, wait=0):
   """Connect to a CircuitPython board via a serial port."""
-  DEBUG and print('Connecting to %s (buffer-size %d)...' % (port, BUFFER_SIZE))
+  main_options.debug and print(
+    'Connecting to %s (buffer-size %d)...' % (port, main_options.buffer_size))
   try:
     dev = DeviceSerial(port, baud, wait)
   except DeviceError as err:
@@ -1352,23 +1288,23 @@ class Device(object):
     self.time_offset = -time.localtime().tm_gmtoff
 
     #self.sysname = ''
-    #QUIET or print('Retrieving sysname ... ', end='', flush=True)
+    #main_options.verbose and print('Retrieving sysname ... ', end='', flush=True)
     #self.sysname = self.remote_eval(sysname)
-    #QUIET or print(self.sysname)
+    #main_options.verbose and print(self.sysname)
 
-    DEBUG and print('Retrieving root directories ... ', end='', flush=True)
+    main_options.debug and print('Retrieving root directories ... ', end='', flush=True)
     self.root_dirs = ['/{}/'.format(dir) for dir in self.remote_eval(listdir, '/')]
-    DEBUG and print(' '.join(self.root_dirs))
+    main_options.debug and print(' '.join(self.root_dirs))
 
-    if SYNC_TIME:
-      QUIET or print('Setting time ... ', end='', flush=True)
+    if main_options.upd_time:
+      main_options.verbose and print('Setting time ... ', end='', flush=True)
       now = self.sync_time()
-      QUIET or print(time.strftime('%b %d, %Y %H:%M:%S', now))
+      main_options.verbose and print(time.strftime('%b %d, %Y %H:%M:%S', now))
 
-    #QUIET or print('Evaluating board_name ... ', end='', flush=True)
+    #main_options.verbose and print('Evaluating board_name ... ', end='', flush=True)
     #self.name, messages = self.remote_eval_last(board_name, self.default_board_name())
-    #QUIET or print(self.name)
-    #if (len(messages) > 0) and not QUIET:
+    #main_options.verbose and print(self.name)
+    #if (len(messages) > 0) and main_options.verbose:
     #  print('----- Prints from board.py ----')
     #  print(messages)
     #  print('----')
@@ -1438,10 +1374,11 @@ class Device(object):
     func_src += '  print("None")\n'
     func_src += 'else:\n'
     func_src += '  print(output)\n'
-    func_src = func_src.replace('TIME_OFFSET', '{}'.format(self.time_offset))
-    func_src = func_src.replace('BUFFER_SIZE', '{}'.format(BUFFER_SIZE))
-    if DEBUG:
-      print('----- About to send %d bytes of code to the board -----' % len(func_src))
+    func_src = func_src.replace('TIME_OFFSET', str(self.time_offset))
+    func_src = func_src.replace('BUFFER_SIZE', str(main_options.buffer_size))
+    if main_options.debug:
+      print(
+        '----- About to send %d bytes of code to the board -----' % len(func_src))
       print(func_src)
       print('-----')
     self.check_cpb()
@@ -1456,7 +1393,7 @@ class Device(object):
       output, _ = self.cpb.follow(timeout=20)
       self.check_cpb()
       self.cpb.exit_raw_repl()
-      if DEBUG:
+      if main_options.debug:
         print('-----Response-----')
         print(output)
         print('------------------')
@@ -1525,17 +1462,17 @@ class DeviceSerial(Device):
     if wait and not os.path.exists(port):
       toggle = False
       try:
-        if not QUIET:
+        if main_options.verbose:
           sys.stdout.write("Waiting %d seconds for serial port '%s' to exist" % (wait, port))
           sys.stdout.flush()
         while wait and not os.path.exists(port):
-          if not QUIET:
+          if main_options.verbose:
             sys.stdout.write('.')
             sys.stdout.flush()
           time.sleep(0.5)
           toggle = not toggle
           wait = wait if not toggle else wait -1
-        QUIET or sys.stdout.write("\n")
+        main_options.verbose and sys.stdout.write("\n")
       except KeyboardInterrupt:
         raise DeviceError('Interrupted')
 
@@ -1543,7 +1480,8 @@ class DeviceSerial(Device):
     self.dev_name_long = '%s at %d baud' % (port, baud)
 
     try:
-      cpb = CpBoard(port, baudrate=baud, wait=wait, soft_reboot=SOFT_REBOOT)
+      cpb = CpBoard(port, baudrate=baud, wait=wait,
+                    soft_reboot=main_options.soft_reboot)
     except CpBoardError as err:
       print(err)
       sys.exit(1)
@@ -1560,7 +1498,7 @@ class DeviceSerial(Device):
     except serial.serialutil.SerialException:
       # Write failed. Now report that we're waiting and keep trying until
       # a write succeeds
-      QUIET or sys.stdout.write("Waiting for transport to be connected.")
+      main_options.verbose and sys.stdout.write("Waiting for transport to be connected.")
       while True:
         time.sleep(0.5)
         try:
@@ -1568,13 +1506,13 @@ class DeviceSerial(Device):
           break
         except serial.serialutil.SerialException:
           pass
-        if not QUIET:
+        if main_options.verbose:
           sys.stdout.write('.')
           sys.stdout.flush()
-      QUIET or sys.stdout.write('\n')
+      main_options.verbose and sys.stdout.write('\n')
 
     # Send Control-C followed by CR until we get a >>> prompt
-    QUIET or print('Trying to connect to REPL ', end='', flush=True)
+    main_options.verbose and print('Trying to connect to REPL ', end='', flush=True)
     connected = False
     for _ in range(20):
       cpb.serial.write(b'\x03\r')
@@ -1582,11 +1520,11 @@ class DeviceSerial(Device):
       if data.endswith(b'>>> '):
         connected = True
         break
-      if not QUIET:
+      if main_options.verbose:
         sys.stdout.write('.')
         sys.stdout.flush()
     if connected:
-      QUIET or print(' connected', flush=True)
+      main_options.verbose and print(' connected', flush=True)
     else:
       raise DeviceError('Unable to connect to REPL')
 
@@ -1674,8 +1612,8 @@ class Shell(cmd.Cmd):
 
   def set_prompt(self):
     if self.stdin == sys.stdin:
-      prompt = PROMPT_COLOR + cur_dir + END_COLOR + '> '
-      if FAKE_INPUT_PROMPT:
+      prompt = main_options.prompt_color + cur_dir + main_options.end_color + '> '
+      if main_options.fake_input_prompt:
         print(prompt, end='')
         self.prompt = ''
       else:
@@ -1699,7 +1637,7 @@ class Shell(cmd.Cmd):
     2 - So we can strip comments
     3 - So we can track line numbers
     """
-    if DEBUG:
+    if main_options.debug:
       print('Executing "%s"' % line)
     self.line_num += 1
     if line == "EOF" or line == 'exit':
@@ -1760,7 +1698,7 @@ class Shell(cmd.Cmd):
       if self.redirect_dev is not None:
         # Redirecting to a remote device, now that we're finished the
         # command, we can copy the collected output to the remote.
-        if DEBUG:
+        if main_options.debug:
           print('Copy redirected output to "%s"' % self.redirect_filename)
         # This belongs on the remote. Copy/append now
         filesize = self.stdout.tell()
@@ -1926,11 +1864,11 @@ class Shell(cmd.Cmd):
                          self.redirect_filename)
       if args[redirect_index] == '>':
         self.redirect_mode = 'w'
-        if DEBUG:
+        if main_options.debug:
           print('Redirecting (write) to', self.redirect_filename)
       else:
         self.redirect_mode = 'a'
-        if DEBUG:
+        if main_options.debug:
           print('Redirecting (append) to', self.redirect_filename)
       self.redirect_dev, self.redirect_filename = get_dev_and_path(self.redirect_filename)
       try:
@@ -2648,240 +2586,45 @@ class Shell(cmd.Cmd):
          print_func=pf, recursed=False, sync_hidden=args.all)
 
 
-def real_main():
-  """The main program."""
-  try:
-    default_baud = int(os.getenv('CPSHELL_BAUD'))
-  except:
-    default_baud = 115200
-  default_port = os.getenv('CPSHELL_PORT')
-  if not default_port:
-    if os.path.exists('/dev/ttyUSB0'):
-      default_port = '/dev/ttyUSB0'
-    elif os.path.exists('/dev/ttyACM0'):
-      default_port = '/dev/ttyACM0'
-  default_editor = os.getenv('CPSHELL_EDITOR') or os.getenv('VISUAL') or os.getenv('EDITOR') or 'vi'
-  default_color = sys.stdout.isatty()
-  default_nocolor = not default_color
-  global BUFFER_SIZE
-  try:
-    default_buffer_size = int(os.getenv('CPSHELL_BUFFER_SIZE'))
-  except:
-    default_buffer_size = BUFFER_SIZE
+# --- helper class for options   ---------------------------------------------
 
-  try:
-    import locale
-    host_locale = locale.getlocale()[0]
-  except:
-    host_locale = 'en_US'
+class Options(object):
+  pass
 
-  parser = argparse.ArgumentParser(
-      prog="cpshell",
-      usage="%(prog)s [options] [command]",
-      description="Remote Shell for a CircuitPython board.",
-      epilog=("You can specify the default serial port using the " +
-              "CPSHELL_PORT environment variable.")
-  )
+# --- run according to options   ---------------------------------------------
 
-  parser.add_argument(
-      "-p", "--port",
-      dest="port",
-      help="Set the serial port to use (default '%s')" % default_port,
-      default=default_port
-  )
-  parser.add_argument(
-      "-b", "--baud",
-      dest="baud",
-      action="store",
-      type=int,
-      help="Set the baudrate used (default = %d)" % default_baud,
-      default=default_baud
-  )
-  parser.add_argument(
-      "-w", "--wait",
-      dest="wait",
-      type=int,
-      action="store",
-      help="Seconds to wait for serial port",
-      default=0
-  )
-  parser.add_argument(
-      "--buffer-size",
-      dest="buffer_size",
-      action="store",
-      type=int,
-      help="Set the buffer size used for transfers "
-           "(default = %d for USB, %d for UART)" %
-           (USB_BUFFER_SIZE, UART_BUFFER_SIZE),
-  )
-  parser.add_argument(
-      "-l", "--list",
-      dest="list",
-      action="store_true",
-      help="Display serial ports",
-      default=False
-  )
-
-  parser.add_argument(
-      "-e", "--editor",
-      dest="editor",
-      help="Set the editor to use (default '%s')" % default_editor,
-      default=default_editor
-  )
-  parser.add_argument(
-      "-n", "--nocolor",
-      dest="nocolor",
-      action="store_true",
-      help="Turn off colorized output",
-      default=default_nocolor
-  )
-  parser.add_argument(
-      "-L", "--locale",
-      dest="cp_locale",
-      help=f"The language (locale) of the CP-device (default: {host_locale})",
-      default=host_locale
-  )
-
-  parser.add_argument(
-      "-f", "--file",
-      dest="filename",
-      help="Specifies a file of commands to process."
-  )
-  parser.add_argument(
-    "-t", "--time",
-    dest="upd_time",
-    action='store_true',
-    help="set time on device (default for cp/rsync)",
-    default=False
-  )
-
-  parser.add_argument(
-      '-V', '--version',
-      dest='version',
-      action='store_true',
-      help='Reports the version and exits.',
-      default=False
-  )
-  parser.add_argument(
-      "-v", "--verbose",
-      dest="quiet",
-      action="store_false",
-      help="Turns on some output (useful for testing)",
-      default=True
-  )
-  parser.add_argument(
-      "-T", "--timing",
-      dest="timing",
-      action="store_true",
-      help="Print timing information about each command",
-      default=False
-  )
-  parser.add_argument(
-      "-d", "--debug",
-      dest="debug",
-      action="store_true",
-      help="Enable debug features",
-      default=False
-  )
-  parser.add_argument(
-      "cmd",
-      nargs=argparse.REMAINDER,
-      help="Optional command to execute"
-  )
-  args = parser.parse_args(sys.argv[1:])
-
-  if args.buffer_size is not None:
-    BUFFER_SIZE = args.buffer_size
-
-  if not len(args.cmd) or 'cp' in args.cmd or 'rsync' in args.cmd:
-    args.upd_time = True
-
-  if args.debug:
-    print("Port = %s" % args.port)
-    print("Baud = %d" % args.baud)
-    print("Wait = %d" % args.wait)
-    print("List = %d" % args.list)
-    print(f"time = {args.upd_time}")
-    print("nocolor = %d" % args.nocolor)
-    print("Timing = %d" % args.timing)
-    print("BUFFER_SIZE = %d" % BUFFER_SIZE)
-    print(f"cp_locale = {args.cp_locale}")
-
-    print("Quiet = %d" % args.quiet)
-    print("Debug = %s" % args.debug)
-
-    print("Cmd = [%s]" % ', '.join(args.cmd))
-
-  if args.version:
+def run(options):
+  if options.version:
     print(__version__)
     return
 
-  global DEBUG
-  DEBUG = args.debug
-
-  global QUIET
-  QUIET = args.quiet
-
-  global EDITOR
-  EDITOR = args.editor
-
-  if args.nocolor:
-    global DIR_COLOR, PROMPT_COLOR, PY_COLOR, END_COLOR
-    DIR_COLOR = ''
-    PROMPT_COLOR = ''
-    PY_COLOR = ''
-    END_COLOR = ''
-  else:
-    if sys.platform == 'darwin':
-      # The readline that comes with OSX screws up colors in the prompt
-      global FAKE_INPUT_PROMPT
-      FAKE_INPUT_PROMPT = True
-
-  global SYNC_TIME
-  SYNC_TIME = args.upd_time
-
-  # we need the locale for the (localized) "soft reboot" message
-  global SOFT_REBOOT
-  if args.cp_locale in CP_LOCALE:
-    SOFT_REBOOT = CP_LOCALE[args.cp_locale]
-  elif args.cp_locale.split("_")[0] in CP_LOCALE:
-    SOFT_REBOOT = CP_LOCALE[args.cp_locale.split("_")[0]]
-  else:
-    SOFT_REBOOT = None
-
-  if args.list:
+  if options.list:
     listports()
     return
 
-  if args.port:
-    if args.buffer_size is None:
-      if is_circuitpython_usb_port(args.port):
-        BUFFER_SIZE = USB_BUFFER_SIZE
-      else:
-        BUFFER_SIZE = UART_BUFFER_SIZE
-    DEBUG and print('Using buffer-size of', BUFFER_SIZE)
+  if options.port:
     try:
-      connect(args.port, baud=args.baud, wait=args.wait)
+      connect(options.port, baud=options.baud, wait=options.wait)
     except Exception as ex:
-      DEBUG and print(ex)
+      main_options.debug and print(ex)
       raise
   else:
     autoscan()
   autoconnect()
 
-  if args.filename:
-    with open(args.filename) as cmd_file:
-      shell = Shell(stdin=cmd_file, filename=args.filename, timing=args.timing)
+  if options.filename:
+    with open(options.filename) as cmd_file:
+      shell = Shell(stdin=cmd_file, filename=options.filename, timing=options.timing)
       shell.cmdloop('')
   else:
-    cmd_line = ' '.join(args.cmd)
+    cmd_line = ' '.join(options.cmd)
     if cmd_line == '':
       print('Welcome to cpshell.', EXIT_STR)
     if num_devices() == 0:
       print('')
       print('No CircuitPython boards connected - use the connect command to add one')
       print('')
-    shell = Shell(timing=args.timing)
+    shell = Shell(timing=options.timing)
     try:
       shell.cmdloop(cmd_line)
     except KeyboardInterrupt:
@@ -2899,11 +2642,18 @@ if __name__ == "__main__":
   except:
     pass
   try:
-    real_main()
+    from cpshell import main_parser
+    defaults = Options()
+    main_parser.set_defaults(defaults)
+    parser = main_parser.create_parser(defaults)
+    main_options = parser.parse_args(namespace=Options)
+    main_parser.check_options(main_options)
+    run(main_options)
   except KeyboardInterrupt:
     print()
   except Exception as ex:
     print(f"{ex.args[0]}")
+    raise
   finally:
     if save_settings:
       termios.tcsetattr(stdin_fd, termios.TCSANOW, save_settings)
