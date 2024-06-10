@@ -2580,12 +2580,6 @@ class Shell(cmd.Cmd):
     rsync(src_dir, dst_dir, mirror=args.mirror, dry_run=args.dry_run,
          print_func=pf, recursed=False, sync_hidden=args.all)
 
-
-# --- helper class for options   ---------------------------------------------
-
-class Options(object):
-  pass
-
 # --- run according to options   ---------------------------------------------
 
 def run(options):
@@ -2644,12 +2638,11 @@ if __name__ == "__main__":
   except:
     pass
   try:
-    from cpshell import main_parser
-    defaults = Options()
-    main_parser.set_defaults(defaults)
-    parser = main_parser.create_parser(defaults)
-    main_options = parser.parse_args(namespace=Options)
-    main_parser.check_options(main_options)
+    from cpshell.main_parser import MainArgParser
+    parser = MainArgParser()
+    parser.create_parser()
+    parser.parse_and_check()
+    main_options = parser.options
     run(main_options)
   except KeyboardInterrupt:
     print()
