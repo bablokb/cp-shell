@@ -39,11 +39,6 @@ except ImportError as err:
   print('sys.path =', sys.path)
   raise err
 
-if sys.platform == 'win32':
-  # This is a workaround for Windows 10/Python 3.7, that allows the colorized output to
-  # work. See: https://stackoverflow.com/questions/12492810/python-how-can-i-make-the-ansi-escape-codes-to-work-also-in-windows
-  import subprocess
-  subprocess.call('', shell=True)
 
 import argparse
 import binascii
@@ -2633,6 +2628,13 @@ def run(options):
 # --- main program   ---------------------------------------------------------
 
 if __name__ == "__main__":
+  if sys.platform == 'win32':
+    # This is a workaround for Windows 10/Python 3.7, that allows the
+    # colorized output to work.
+    # See: https://stackoverflow.com/questions/12492810/python-how-can-i-make-the-ansi-escape-codes-to-work-also-in-windows
+    import subprocess
+    subprocess.call('', shell=True)
+
   save_settings = None
   stdin_fd = -1
   try:
