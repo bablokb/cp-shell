@@ -383,6 +383,11 @@ class CmdShell(cmd.Cmd):
       utils.print_err(err)
       self._options.debug and traceback.print_exc()
 
+  # --- delegate do_help to our standard multiplexer   -----------------------
+
+  def do_help(self,line):
+    self.default(line)
+
   # --- multiplex commands, i.e. call run() of command-subclass   ------------
 
   def default(self, line):
@@ -406,7 +411,7 @@ class CmdShell(cmd.Cmd):
       print(f"DEBUG: default(): {args=}")
       print(f"DEBUG: default(): cmdinstance: {cmdinstance}")
 
-    cmdinstance.run(args[1:])
+    cmdinstance.run(args)
 
   # --- main command-loop   --------------------------------------------------
 
