@@ -10,11 +10,11 @@
 # Website: https://github.com/bablokb/cp-shell
 # ----------------------------------------------------------------------------
 
-from .command import Command 
+from cpshell import commands
 from cpshell import utils
 from cpshell import device
 
-class Help(Command):
+class Help(commands.command.Command):
 
   # --- constructor   --------------------------------------------------------
 
@@ -34,8 +34,16 @@ class Help(Command):
     if not args:
       # print help for help (i.e. ourselves)
       self.parser.print_help()
-      # TODO: print list of commands
-      self.shell.print(utils.EXIT_STR)
+
+      import pkgutil
+      all_cmds = [mod.name for mod in list(
+                                       pkgutil.iter_modules(commands.__path__))]
+      self.shell.print("="*20)
+      self.shell.print("Available commands:")
+      for cmd in all_cmds:
+        if cmd != "command":
+          self.shell.print(f"  {cmd}")
+      self.shell.print("="*20)
       return
 
     # create command and parser and print help of command
@@ -43,4 +51,4 @@ class Help(Command):
       cmd = Command.create(args[0],self.shell)
       cmd.parser.print_help()
     except:
-      utils.print_err("Unrecognized command:",args[0])
+      utils.print_err(f"no help for {args[0]} - unknown command?!")
