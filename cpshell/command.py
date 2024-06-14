@@ -14,6 +14,13 @@ import argparse
 
 class Command:
 
+  @classmethod
+  def create(cls,name,shell):
+    """ create an instance of the command """
+    cmdmodule   = __import__(f"commands.{name}",
+                             globals(),locals(),[cmd.capitalize()],1)
+    return getattr(cmdmodule,name.capitalize())(shell)
+
   # --- constructor   --------------------------------------------------------
 
   def __init__(self,shell,name):
@@ -48,6 +55,6 @@ class Command:
 
   # --- run command   --------------------------------------------------------
 
-  def run(self,line):
+  def run(self,args):
     """ Run command. Must be implemented by subclass """
     pass
