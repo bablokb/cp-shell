@@ -11,8 +11,8 @@
 # ----------------------------------------------------------------------------
 
 from .command import Command 
-from . import utils
-from . import device
+from cpshell import utils
+from cpshell import device
 
 class Date(Command):
 

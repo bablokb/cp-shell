@@ -21,6 +21,7 @@ import traceback
 
 from . import utils
 from . import device
+from .commands.command import Command
 
 # --- readline and workaround   ----------------------------------------------
 
@@ -393,8 +394,7 @@ class CmdShell(cmd.Cmd):
     cmd, _, _ = self.parseline(self.lastcmd)
     args = self.line_to_args(line)
     try:
-      cmdmodule   = __import__(cmd,globals(),locals(),[cmd.capitalize()],1)
-      cmdinstance = getattr(cmdmodule,cmd.capitalize())(self)
+      cmdinstance = Command.create(cmd,self)
     except:
       self._options.debug and print(traceback.print_exc())
       utils.print_err("Unrecognized command:",line)

@@ -17,8 +17,8 @@ class Command:
   @classmethod
   def create(cls,name,shell):
     """ create an instance of the command """
-    cmdmodule   = __import__(f"commands.{name}",
-                             globals(),locals(),[cmd.capitalize()],1)
+    cmdmodule   = __import__(name,
+                             globals(),locals(),[name.capitalize()],1)
     return getattr(cmdmodule,name.capitalize())(shell)
 
   # --- constructor   --------------------------------------------------------
