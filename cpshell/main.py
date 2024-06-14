@@ -53,11 +53,6 @@ import time
 import threading
 from serial.tools import list_ports
 
-if sys.platform == 'win32':
-  EXIT_STR = 'Use the exit command to exit cpshell.'
-else:
-  EXIT_STR = 'Use Control-D (or the exit command) to exit cpshell.'
-
 # I got the following from: http://www.farmckon.net/2009/08/rlcompleter-how-do-i-get-it-to-work/
 
 MONTH = ('', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -586,7 +581,7 @@ def run(options):
   else:
     cmd_line = ' '.join(options.cmd)
     if cmd_line == '':
-      print('Welcome to cpshell.', EXIT_STR)
+      print('Welcome to cpshell.', utils.EXIT_STR)
     if not device.Device.get_device():
       print('')
       print('No boards connected - use the connect command to add one')

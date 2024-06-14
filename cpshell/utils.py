@@ -13,6 +13,11 @@
 import sys
 import inspect
 
+if sys.platform == 'win32':
+  EXIT_STR = 'Use the exit command to exit cpshell.'
+else:
+  EXIT_STR = 'Use Control-D (or the exit command) to exit cpshell.'
+
 from . import device
 
 def extra_funcs(*funcs):
