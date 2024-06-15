@@ -76,6 +76,12 @@ class Command:
     """ Add arguments to parser. Must be implemented by subclass """
     pass
 
+  # --- default completer   --------------------------------------------------
+
+  def complete(self,text,line,begidx,endidx):
+    """ default completer - override if necessary """
+    return shell.filename_complete(text, line, begidx, endidx)
+
   # --- run command   --------------------------------------------------------
 
   def run(self,args):
