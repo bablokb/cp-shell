@@ -48,7 +48,7 @@ class Help(commands.command.Command):
 
     # create command and parser and print help of command
     try:
-      cmd = Command.create(args[0],self.shell)
+      cmd = commands.command.Command.create(args[0],self.shell)
       cmd.parser.print_help()
     except:
       utils.print_err(f"no help for {args[0]} - unknown command?!")
