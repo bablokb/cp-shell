@@ -14,12 +14,19 @@ import argparse
 
 class Command:
 
+  # cache-objects
+  _cmd_obj = {}
+  _cmd_list = []
+
   @classmethod
   def create(cls,name,shell):
     """ create an instance of the command """
-    cmdmodule   = __import__(name,
-                             globals(),locals(),[name.capitalize()],1)
-    return getattr(cmdmodule,name.capitalize())(shell)
+    if not name in Command._cmd_obj:
+      cmdmodule   = __import__(name,
+                               globals(),locals(),[name.capitalize()],1)
+      obj = getattr(cmdmodule,name.capitalize())(shell)
+      Command._cmd_obj[name] = obj
+    return Command._cmd_obj[name]
 
   # --- constructor   --------------------------------------------------------
 
