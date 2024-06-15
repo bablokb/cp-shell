@@ -18,6 +18,8 @@ class Command:
   _cmd_obj = {}
   _cmd_list = []
 
+  # --- return command-object (create if not already cached)    --------------
+
   @classmethod
   def create(cls,name,shell):
     """ create an instance of the command """
@@ -27,6 +29,20 @@ class Command:
       obj = getattr(cmdmodule,name.capitalize())(shell)
       Command._cmd_obj[name] = obj
     return Command._cmd_obj[name]
+
+  # --- return list of all commands   ----------------------------------------
+
+  @classmethod
+  def all_commands(cls):
+    """ return list of available commands """
+    if not len(Command._cmd_list):
+      from cpshell import commands
+      import pkgutil
+      Command._cmd_list = [
+         mod.name for mod in
+             list(pkgutil.iter_modules(commands.__path__))
+                if mod.name != "command"]
+    return Command._cmd_list
 
   # --- constructor   --------------------------------------------------------
 
