@@ -10,6 +10,8 @@
 # Website: https://github.com/bablokb/cp-shell
 # ----------------------------------------------------------------------------
 
+import traceback
+
 from cpshell.commands.command import Command
 from cpshell import utils
 from cpshell import device
@@ -48,4 +50,5 @@ class Help(Command):
       cmd = Command.create(args[0],self.shell)
       cmd.parser.print_help()
     except:
+      self.shell._options.debug and traceback.print_exc()
       utils.print_err(f"no help for {args[0]} - unknown command?!")
