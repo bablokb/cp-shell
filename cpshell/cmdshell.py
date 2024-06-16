@@ -388,6 +388,11 @@ class CmdShell(cmd.Cmd):
   def do_help(self,line):
     self.default("help "+line)
 
+  # --- delegate do_shell to our standard multiplexer   ----------------------
+
+  def do_shell(self, line):
+    self.default("shell "+line)
+
   # --- multiplex commands, i.e. call run() of command-subclass   ------------
 
   def default(self, line):
