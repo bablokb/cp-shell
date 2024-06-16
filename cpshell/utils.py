@@ -552,3 +552,37 @@ def trim(docstring):
     trimmed.pop(0)
   # Return a single string:
   return '\n'.join(trimmed)
+
+def is_pattern(s):
+  """Return True if a string contains Unix wildcard pattern characters.
+  """
+  return not set('*?[{').intersection(set(s)) == set()
+
+
+# Disallow patterns like path/t*/bar* because handling them on remote
+# system is difficult without the glob library.
+def parse_pattern(s):
+  """Parse a string such as 'foo/bar/*.py'
+  Assumes is_pattern(s) has been called and returned True
+  1. directory to process
+  2. pattern to match"""
+  if '{' in s:
+    return None, None  # Unsupported by fnmatch
+  if s and s[0] == '~':
+    s = os.path.expanduser(s)
+  parts = s.split('/')
+  absolute = len(parts) > 1 and not parts[0]
+  if parts[-1] == '':  # # Outcome of trailing /
+    parts = parts[:-1]  # discard
+  if len(parts) == 0:
+    directory = ''
+    pattern = ''
+  else:
+    directory = '/'.join(parts[:-1])
+    pattern = parts[-1]
+  if not is_pattern(directory): # Check for e.g. /abc/*/def
+    if is_pattern(pattern):
+      if not directory:
+        directory = '/' if absolute else '.'
+      return directory, pattern
+  return None, None # Invalid or nonexistent pattern
