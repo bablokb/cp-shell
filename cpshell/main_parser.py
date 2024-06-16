@@ -17,11 +17,7 @@ import locale
 
 from cpshell import ansi_colors
 from cpshell.cplocale import CP_LOCALE
-
-# --- helper class for options   ---------------------------------------------
-
-class Options:
-  pass
+from cpshell.options import Options
 
 # --- Wrapper class for argparser   ------------------------------------------
 
@@ -30,7 +26,6 @@ class MainArgParser:
 
   def __init__(self):
     """ constructor """
-    self._defaults = Options()
     self._set_defaults()
 
   # --- query program defaults from environment   ----------------------------
@@ -194,7 +189,7 @@ class MainArgParser:
     """ parse, validate and fix options """
 
     # parse commandline
-    self.options = self._parser.parse_args(namespace=Options)
+    self.options = self._parser.parse_args(namespace=Options.get())
     if (not len(self.options.cmd) or
         'cp' in self.options.cmd or 'rsync' in self.options.cmd):
       self.options.upd_time = True

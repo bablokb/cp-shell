@@ -11,7 +11,15 @@
 # ----------------------------------------------------------------------------
 
 import sys
+import time
 import inspect
+import fnmatch
+
+from .options import Options
+
+SIX_MONTHS = 183 * 24 * 60 * 60
+MONTH = ('', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+         'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')
 
 if sys.platform == 'win32':
   EXIT_STR = 'Use the exit command to exit cpshell.'
@@ -159,7 +167,7 @@ def get_mode(filename):
     return 0
 
 
-def lstat(filename):
+def lstat(filename,time_offset):
   """Returns os.lstat for a given file, adjusting the timestamps as appropriate.
     This function will not follow symlinks."""
   import os
@@ -169,14 +177,14 @@ def lstat(filename):
   except:
     rstat = os.stat(filename)
     print("")
-  return rstat[:7] + tuple(tim + TIME_OFFSET for tim in rstat[7:])
+  return rstat[:7] + tuple(tim + time_offset for tim in rstat[7:])
 
 
-def stat(filename):
+def stat(filename,time_offset):
   """Returns os.stat for a given file, adjusting the timestamps as appropriate."""
   import os
   rstat = os.stat(filename)
-  return rstat[:7] + tuple(tim + TIME_OFFSET for tim in rstat[7:])
+  return rstat[:7] + tuple(tim + time_offset for tim in rstat[7:])
 
 
 def mode_exists(mode):
@@ -218,23 +226,23 @@ def is_visible(filename):
 
 
 @extra_funcs(stat)
-def get_stat(filename):
+def get_stat(filename,time_offset):
   """Returns the stat array for a given file. Returns all 0's if the file
     doesn't exist.
   """
   try:
-    return stat(filename)
+    return stat(filename,time_offset)
   except OSError:
     return (0,) * 10
 
 
 @extra_funcs(lstat)
-def get_lstat(filename):
+def get_lstat(filename,time_offset):
   """Returns the stat array for a given file. Returns all 0's if the file
     doesn't exist.
   """
   try:
-    return lstat(filename)
+    return lstat(filename,time_offset)
   except OSError:
     return (0,) * 10
 
@@ -278,7 +286,7 @@ def listdir_matches(match):
 
 
 @extra_funcs(is_visible, lstat)
-def listdir_lstat(dirname, show_hidden=True):
+def listdir_lstat(dirname, time_offset,show_hidden=True):
   """Returns a list of tuples for each file contained in the named
     directory, or None if the directory does not exist. Each tuple
     contains the filename, followed by the tuple returned by
@@ -290,8 +298,8 @@ def listdir_lstat(dirname, show_hidden=True):
   except OSError:
     return None
   if dirname == '/':
-    return list((file, lstat('/' + file)) for file in files if is_visible(file) or show_hidden)
-  return list((file, lstat(dirname + '/' + file)) for file in files if is_visible(file) or show_hidden)
+    return list((file, lstat('/' + file,time_offset)) for file in files if is_visible(file) or show_hidden)
+  return list((file, lstat(dirname + '/' + file,time_offset)) for file in files if is_visible(file) or show_hidden)
 
 
 @extra_funcs(is_visible, stat)
@@ -353,9 +361,9 @@ def remove_file(filename, recursive=False, force=False):
 def rm(filename, recursive=False, force=False):
   """Removes a file or directory tree."""
   if recursive:
-    main_options.verbose and print(f"rm -r {filename}")
+    Options.get().verbose and print(f"rm -r {filename}")
   else:
-    main_options.verbose and print(f"rm {filename}")
+    Options.get().verbose and print(f"rm {filename}")
   return utils.auto(remove_file, filename, recursive, force)
 
 
@@ -364,7 +372,7 @@ def make_dir(dst_dir, dry_run, print_func, recursed):
   Issues error where necessary.
   """
   parent = os.path.split(dst_dir.rstrip('/'))[0] # Check for nonexistent parent
-  parent_files = utils.auto(listdir_lstat, parent) if parent else True # Relative dir
+  parent_files = utils.auto(listdir_lstat,parent,0) if parent else True # Relative dir
   if dry_run:
     if recursed: # Assume success: parent not actually created yet
       print_func("Creating directory {}".format(dst_dir))
@@ -372,7 +380,7 @@ def make_dir(dst_dir, dry_run, print_func, recursed):
       print_func("Unable to create {}".format(dst_dir))
     return True
 
-  main_options.verbose and print(f"mkdir {dst_dir}")
+  Options.get().verbose and print(f"mkdir {dst_dir}")
   if not mkdir(dst_dir):
     utils.print_err("Unable to create {}".format(dst_dir))
     return False
@@ -422,7 +430,7 @@ def rsync(src_dir, dst_dir, mirror, dry_run, print_func, recursed, sync_hidden):
   for src_basename in to_add:  # Name in source but absent from destination
     src_filename = src_dir + '/' + src_basename
     dst_filename = dst_dir + '/' + src_basename
-    if dry_run or main_options.debug:
+    if dry_run or Options.get().debug:
       print_func("Adding %s" % dst_filename)
     src_stat = d_src[src_basename]
     src_mode = stat_mode(src_stat)
@@ -436,7 +444,7 @@ def rsync(src_dir, dst_dir, mirror, dry_run, print_func, recursed, sync_hidden):
   if mirror:  # May delete
     for dst_basename in to_del:  # In dest but not in source
       dst_filename = dst_dir + '/' + dst_basename
-      if dry_run or main_options.debug:
+      if dry_run or Options.get().debug:
         print_func("Removing %s" % dst_filename)
       if not dry_run:
         rm(dst_filename, recursive=True, force=True)
@@ -463,7 +471,7 @@ def rsync(src_dir, dst_dir, mirror, dry_run, print_func, recursed, sync_hidden):
               "'{}' is a directory. Ignoring"
         utils.print_err(msg.format(src_filename, dst_filename))
       else:
-        if dry_run or main_options.debug:
+        if dry_run or Options.get().debug:
           print_func('Checking {}'.format(dst_filename))
         if stat_mtime(src_stat) > stat_mtime(dst_stat):
           msg = "{} is newer than {} - copying"
@@ -493,11 +501,11 @@ def decorated_filename(filename, stat):
   """
   mode = stat[0]
   if mode_isdir(mode):
-    return main_options.dir_color + filename + main_options.end_color + '/'
+    return Options.get().dir_color + filename + Options.get().end_color + '/'
   if mode_issymlink(mode):
     return filename + '@'
   if filename.endswith('.py'):
-    return main_options.py_color + filename + main_options.end_color
+    return Options.get().py_color + filename + Options.get().end_color
   return filename
 
 

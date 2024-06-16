@@ -85,7 +85,6 @@ class Device(object):
   def __init__(self,options,cpb=None):
     self.options = options
     self.cpb = cpb
-    self.time_offset = -time.localtime().tm_gmtoff
 
   # --- setup of the device   ------------------------------------------------
 
@@ -177,7 +176,6 @@ class Device(object):
     func_src += '  print("None")\n'
     func_src += 'else:\n'
     func_src += '  print(output)\n'
-    func_src = func_src.replace('TIME_OFFSET', str(self.time_offset))
     func_src = func_src.replace('BUFFER_SIZE', str(self.options.buffer_size))
     if self.options.debug:
       print(

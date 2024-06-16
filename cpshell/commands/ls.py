@@ -10,6 +10,9 @@
 # Website: https://github.com/bablokb/cp-shell
 # ----------------------------------------------------------------------------
 
+import time
+import fnmatch
+
 from .command import Command 
 from cpshell import utils
 from cpshell import device
@@ -59,13 +62,13 @@ class Ls(Command):
     """
 
     args = self.parser.parse_args(args)
-
+    time_offset = -time.localtime().tm_gmtoff
     if len(args.filenames) == 0:
       args.filenames = ['.']
     for idx, fn in enumerate(args.filenames):
       if not utils.is_pattern(fn):
         filename = utils.resolve_path(fn,self.shell.cur_dir)
-        stat = utils.auto(utils.get_stat, filename)
+        stat = utils.auto(utils.get_stat, filename, time_offset)
         mode = utils.stat_mode(stat)
         if not utils.mode_exists(mode):
           utils.print_err(
@@ -87,7 +90,7 @@ class Ls(Command):
         if filename is None: # An error was printed
           continue
       files = []
-      ldir_stat = utils.auto(utils.listdir_lstat, filename)
+      ldir_stat = utils.auto(utils.listdir_lstat, filename, time_offset)
       if ldir_stat is None:
         utils.print_err(
           f"Cannot access '{filename}': No such file or directory")

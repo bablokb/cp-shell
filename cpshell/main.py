@@ -42,7 +42,6 @@ except ImportError as err:
 
 import binascii
 import calendar
-import fnmatch
 import os
 import re
 import select
@@ -53,11 +52,6 @@ import time
 import threading
 from serial.tools import list_ports
 
-# I got the following from: http://www.farmckon.net/2009/08/rlcompleter-how-do-i-get-it-to-work/
-
-MONTH = ('', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-         'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')
-
 # It turns out that just because pyudev is installed doesn't mean that
 # it can actually be used. So we only bother to try if we're running
 # under linux.
@@ -67,8 +61,6 @@ MONTH = ('', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
 # Currently, there is no serial port enumeration availbale under WSL.
 import platform
 USE_AUTOCONNECT = sys.platform == 'linux' and 'Microsoft' not in platform.uname().release
-
-SIX_MONTHS = 183 * 24 * 60 * 60
 
 QUIT_REPL_CHAR = 'X'
 QUIT_REPL_BYTE = bytes((ord(QUIT_REPL_CHAR) - ord('@'),))  # Control-X
