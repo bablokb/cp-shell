@@ -353,7 +353,8 @@ class CmdShell(cmd.Cmd):
         filesize = self.stdout.tell()
         self.stdout.seek(0)
         self.redirect_dev.remote(utils.recv_file_from_host, self.stdout,
-                                 self.redirect_filename, filesize,
+                                 self.redirect_filename,
+                                 filesize, self._options.buffer_size,
                                  dst_mode=self.redirect_mode,
                                  xfer_func=utils.send_file_to_remote)
       self.stdout.close()

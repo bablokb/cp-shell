@@ -177,7 +177,6 @@ class Device(object):
     func_src += '  print("None")\n'
     func_src += 'else:\n'
     func_src += '  print(output)\n'
-    func_src = func_src.replace('BUFFER_SIZE', str(self.options.buffer_size))
     if self.options.debug:
       print(
         '----- About to send %d bytes of code to the board -----' % len(func_src))

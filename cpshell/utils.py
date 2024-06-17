@@ -14,6 +14,7 @@ import sys
 import time
 import inspect
 import fnmatch
+import binascii
 
 from .options import Options
 
@@ -600,7 +601,7 @@ def parse_pattern(s):
 # no transformations, so if that's available, we use it, otherwise we need
 # to use hexlify in order to get unaltered data.
 
-def recv_file_from_host(src_file, dst_filename, filesize, dst_mode='wb'):
+def recv_file_from_host(src_file, dst_filename, filesize, buf_size,dst_mode='wb'):
   """Function which runs on the board. Matches up with send_file_to_remote."""
   import sys
   import binascii
@@ -610,7 +611,6 @@ def recv_file_from_host(src_file, dst_filename, filesize, dst_mode='wb'):
     with open(dst_filename, dst_mode) as dst_file:
       bytes_remaining = filesize
       bytes_remaining *= 2  # hexlify makes each byte into 2
-      buf_size = BUFFER_SIZE
       write_buf = bytearray(buf_size)
       read_buf = bytearray(buf_size)
       while bytes_remaining > 0:
@@ -649,7 +649,7 @@ def send_file_to_remote(dev, src_file, dst_filename, filesize, dst_mode='wb'):
     if ack is None or ack != b'\x06':
       raise RuntimeError("timed out or error in transfer to remote: {!r}\n".format(ack))
 
-    buf_size = main_options.buffer_size // 2
+    buf_size = Options.get().buffer_size // 2
     read_size = min(bytes_remaining, buf_size)
     buf = src_file.read(read_size)
     #sys.stdout.write('\r%d/%d' % (filesize - bytes_remaining, filesize))
@@ -660,13 +660,12 @@ def send_file_to_remote(dev, src_file, dst_filename, filesize, dst_mode='wb'):
   dev.timeout = save_timeout
 
 
-def recv_file_from_remote(dev, src_filename, dst_file, filesize):
+def recv_file_from_remote(dev, src_filename, dst_file, filesize, buf_size):
   """Intended to be passed to the `remote` function as the xfer_func argument.
     Matches up with send_file_to_host.
   """
   bytes_remaining = filesize
   bytes_remaining *= 2  # hexlify makes each byte into 2
-  buf_size = main_options.buffer_size
   write_buf = bytearray(buf_size)
   while bytes_remaining > 0:
     read_size = min(bytes_remaining, buf_size)
@@ -685,14 +684,14 @@ def recv_file_from_remote(dev, src_filename, dst_file, filesize):
     bytes_remaining -= read_size
 
 
-def send_file_to_host(src_filename, dst_file, filesize):
+def send_file_to_host(src_filename, dst_file, filesize, buf_size):
   """Function which runs on the board. Matches up with recv_file_from_remote."""
   import sys
   import binascii
   try:
     with open(src_filename, 'rb') as src_file:
       bytes_remaining = filesize
-      buf_size = BUFFER_SIZE // 2
+      buf_size = buf_size // 2
       while bytes_remaining > 0:
         read_size = min(bytes_remaining, buf_size)
         buf = src_file.read(read_size)
