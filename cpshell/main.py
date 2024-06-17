@@ -218,26 +218,6 @@ def board_name(default):
   import board
   return repr(board.board_id)
 
-
-def cat(src_filename, dst_file):
-  """Copies the contents of the indicated file to an already opened file."""
-  (dev, dev_filename) = utils.get_dev_and_path(src_filename)
-  if dev is None:
-    with open(dev_filename, 'rb') as txtfile:
-      for line in txtfile:
-        dst_file.write(line)
-  else:
-    filesize = dev.remote_eval(get_filesize, dev_filename)
-    return dev.remote(send_file_to_host, dev_filename, dst_file, filesize,
-                      xfer_func=recv_file_from_remote)
-
-
-def chdir(dirname):
-  """Changes the current working directory."""
-  import os
-  os.chdir(dirname)
-
-
 def copy_file(src_filename, dst_filename):
   """Copies a file from one place to another. Both the source and destination
     files must exist on the same machine.
@@ -256,150 +236,11 @@ def copy_file(src_filename, dst_filename):
     return False
 
 
-def cp(src_filename, dst_filename):
-  """Copies one file to another. The source file may be local or remote and
-    the destination file may be local or remote.
-  """
-  src_dev, src_dev_filename = utils.get_dev_and_path(src_filename)
-  dst_dev, dst_dev_filename = utils.get_dev_and_path(dst_filename)
-
-  main_options.verbose and print(f"cp {src_filename} {dst_filename}")
-  if src_dev is dst_dev:
-    # src and dst are either on the same remote, or both are on the host
-    return utils.auto(copy_file, src_filename, dst_dev_filename)
-
-  filesize = utils.auto(get_filesize, src_filename)
-
-  if dst_dev is None:
-    # Copying from remote to host
-    with open(dst_dev_filename, 'wb') as dst_file:
-      return src_dev.remote(send_file_to_host, src_dev_filename, dst_file,
-                            filesize, xfer_func=recv_file_from_remote)
-  if src_dev is None:
-    # Copying from host to remote
-    with open(src_dev_filename, 'rb') as src_file:
-      return dst_dev.remote(recv_file_from_host, src_file, dst_dev_filename,
-                            filesize, xfer_func=send_file_to_remote)
-
 def eval_str(string):
   """Executes a string containing python code."""
   output = eval(string)
   return output
 
-# 0x0D's sent from the host get transformed into 0x0A's, and 0x0A sent to the
-# host get converted into 0x0D0A when using sys.stdin. sys.tsin.buffer does
-# no transformations, so if that's available, we use it, otherwise we need
-# to use hexlify in order to get unaltered data.
-
-def recv_file_from_host(src_file, dst_filename, filesize, dst_mode='wb'):
-  """Function which runs on the board. Matches up with send_file_to_remote."""
-  import sys
-  import binascii
-  import os
-  try:
-    import time
-    with open(dst_filename, dst_mode) as dst_file:
-      bytes_remaining = filesize
-      bytes_remaining *= 2  # hexlify makes each byte into 2
-      buf_size = BUFFER_SIZE
-      write_buf = bytearray(buf_size)
-      read_buf = bytearray(buf_size)
-      while bytes_remaining > 0:
-        # Send back an ack as a form of flow control
-        sys.stdout.write('\x06')
-        read_size = min(bytes_remaining, buf_size)
-        buf_remaining = read_size
-        buf_index = 0
-        while buf_remaining > 0:
-          bytes_read = sys.stdin.readinto(read_buf, read_size)
-          time.sleep(0.02)
-          if bytes_read > 0:
-            write_buf[buf_index:bytes_read] = read_buf[0:bytes_read]
-            buf_index += bytes_read
-            buf_remaining -= bytes_read
-        dst_file.write(binascii.unhexlify(write_buf[0:read_size]))
-        if hasattr(os, 'sync'):
-          os.sync()
-        bytes_remaining -= read_size
-    return True
-  except Exception as ex:
-    print(ex)
-    return False
-
-
-def send_file_to_remote(dev, src_file, dst_filename, filesize, dst_mode='wb'):
-  """Intended to be passed to the `remote` function as the xfer_func argument.
-    Matches up with recv_file_from_host.
-  """
-  bytes_remaining = filesize
-  save_timeout = dev.timeout
-  dev.timeout = 2
-  while bytes_remaining > 0:
-    # Wait for ack so we don't get too far ahead of the remote
-    ack = dev.read(1)
-    if ack is None or ack != b'\x06':
-      raise RuntimeError("timed out or error in transfer to remote: {!r}\n".format(ack))
-
-    buf_size = main_options.buffer_size // 2
-    read_size = min(bytes_remaining, buf_size)
-    buf = src_file.read(read_size)
-    #sys.stdout.write('\r%d/%d' % (filesize - bytes_remaining, filesize))
-    #sys.stdout.flush()
-    dev.write(binascii.hexlify(buf))
-    bytes_remaining -= read_size
-  #sys.stdout.write('\r')
-  dev.timeout = save_timeout
-
-
-def recv_file_from_remote(dev, src_filename, dst_file, filesize):
-  """Intended to be passed to the `remote` function as the xfer_func argument.
-    Matches up with send_file_to_host.
-  """
-  bytes_remaining = filesize
-  bytes_remaining *= 2  # hexlify makes each byte into 2
-  buf_size = main_options.buffer_size
-  write_buf = bytearray(buf_size)
-  while bytes_remaining > 0:
-    read_size = min(bytes_remaining, buf_size)
-    buf_remaining = read_size
-    buf_index = 0
-    while buf_remaining > 0:
-      read_buf = dev.read(buf_remaining)
-      bytes_read = len(read_buf)
-      if bytes_read:
-        write_buf[buf_index:bytes_read] = read_buf[0:bytes_read]
-        buf_index += bytes_read
-        buf_remaining -= bytes_read
-    dst_file.write(binascii.unhexlify(write_buf[0:read_size]))
-    # Send an ack to the remote as a form of flow control
-    dev.write(b'\x06')   # ASCII ACK is 0x06
-    bytes_remaining -= read_size
-
-
-def send_file_to_host(src_filename, dst_file, filesize):
-  """Function which runs on the board. Matches up with recv_file_from_remote."""
-  import sys
-  import binascii
-  try:
-    with open(src_filename, 'rb') as src_file:
-      bytes_remaining = filesize
-      buf_size = BUFFER_SIZE // 2
-      while bytes_remaining > 0:
-        read_size = min(bytes_remaining, buf_size)
-        buf = src_file.read(read_size)
-        sys.stdout.write(binascii.hexlify(buf))
-        bytes_remaining -= read_size
-        # Wait for an ack so we don't get ahead of the remote
-        while True:
-          char = sys.stdin.read(1)
-          if char:
-            if char == '\x06':
-              break
-            # This should only happen if an error occurs
-            sys.stdout.write(char)
-    return True
-  except:
-    return False
 
 def word_len(word):
   """Returns the word length, minus any color codes."""

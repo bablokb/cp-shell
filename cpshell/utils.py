@@ -594,3 +594,118 @@ def parse_pattern(s):
         directory = '/' if absolute else '.'
       return directory, pattern
   return None, None # Invalid or nonexistent pattern
+
+# 0x0D's sent from the host get transformed into 0x0A's, and 0x0A sent to the
+# host get converted into 0x0D0A when using sys.stdin. sys.tsin.buffer does
+# no transformations, so if that's available, we use it, otherwise we need
+# to use hexlify in order to get unaltered data.
+
+def recv_file_from_host(src_file, dst_filename, filesize, dst_mode='wb'):
+  """Function which runs on the board. Matches up with send_file_to_remote."""
+  import sys
+  import binascii
+  import os
+  try:
+    import time
+    with open(dst_filename, dst_mode) as dst_file:
+      bytes_remaining = filesize
+      bytes_remaining *= 2  # hexlify makes each byte into 2
+      buf_size = BUFFER_SIZE
+      write_buf = bytearray(buf_size)
+      read_buf = bytearray(buf_size)
+      while bytes_remaining > 0:
+        # Send back an ack as a form of flow control
+        sys.stdout.write('\x06')
+        read_size = min(bytes_remaining, buf_size)
+        buf_remaining = read_size
+        buf_index = 0
+        while buf_remaining > 0:
+          bytes_read = sys.stdin.readinto(read_buf, read_size)
+          time.sleep(0.02)
+          if bytes_read > 0:
+            write_buf[buf_index:bytes_read] = read_buf[0:bytes_read]
+            buf_index += bytes_read
+            buf_remaining -= bytes_read
+        dst_file.write(binascii.unhexlify(write_buf[0:read_size]))
+        if hasattr(os, 'sync'):
+          os.sync()
+        bytes_remaining -= read_size
+    return True
+  except Exception as ex:
+    print(ex)
+    return False
+
+
+def send_file_to_remote(dev, src_file, dst_filename, filesize, dst_mode='wb'):
+  """Intended to be passed to the `remote` function as the xfer_func argument.
+    Matches up with recv_file_from_host.
+  """
+  bytes_remaining = filesize
+  save_timeout = dev.timeout
+  dev.timeout = 2
+  while bytes_remaining > 0:
+    # Wait for ack so we don't get too far ahead of the remote
+    ack = dev.read(1)
+    if ack is None or ack != b'\x06':
+      raise RuntimeError("timed out or error in transfer to remote: {!r}\n".format(ack))
+
+    buf_size = main_options.buffer_size // 2
+    read_size = min(bytes_remaining, buf_size)
+    buf = src_file.read(read_size)
+    #sys.stdout.write('\r%d/%d' % (filesize - bytes_remaining, filesize))
+    #sys.stdout.flush()
+    dev.write(binascii.hexlify(buf))
+    bytes_remaining -= read_size
+  #sys.stdout.write('\r')
+  dev.timeout = save_timeout
+
+
+def recv_file_from_remote(dev, src_filename, dst_file, filesize):
+  """Intended to be passed to the `remote` function as the xfer_func argument.
+    Matches up with send_file_to_host.
+  """
+  bytes_remaining = filesize
+  bytes_remaining *= 2  # hexlify makes each byte into 2
+  buf_size = main_options.buffer_size
+  write_buf = bytearray(buf_size)
+  while bytes_remaining > 0:
+    read_size = min(bytes_remaining, buf_size)
+    buf_remaining = read_size
+    buf_index = 0
+    while buf_remaining > 0:
+      read_buf = dev.read(buf_remaining)
+      bytes_read = len(read_buf)
+      if bytes_read:
+        write_buf[buf_index:bytes_read] = read_buf[0:bytes_read]
+        buf_index += bytes_read
+        buf_remaining -= bytes_read
+    dst_file.write(binascii.unhexlify(write_buf[0:read_size]))
+    # Send an ack to the remote as a form of flow control
+    dev.write(b'\x06')   # ASCII ACK is 0x06
+    bytes_remaining -= read_size
+
+
+def send_file_to_host(src_filename, dst_file, filesize):
+  """Function which runs on the board. Matches up with recv_file_from_remote."""
+  import sys
+  import binascii
+  try:
+    with open(src_filename, 'rb') as src_file:
+      bytes_remaining = filesize
+      buf_size = BUFFER_SIZE // 2
+      while bytes_remaining > 0:
+        read_size = min(bytes_remaining, buf_size)
+        buf = src_file.read(read_size)
+        sys.stdout.write(binascii.hexlify(buf))
+        bytes_remaining -= read_size
+        # Wait for an ack so we don't get ahead of the remote
+        while True:
+          char = sys.stdin.read(1)
+          if char:
+            if char == '\x06':
+              break
+            # This should only happen if an error occurs
+            sys.stdout.write(char)
+    return True
+  except:
+    return False
