@@ -40,12 +40,10 @@ except ImportError as err:
   print('sys.path =', sys.path)
   raise err
 
-import binascii
 import calendar
 import os
 import re
 import select
-import serial
 import socket
 import tempfile
 import time
