@@ -15,6 +15,7 @@ import inspect
 import token
 import tokenize
 import io
+import serial
 
 from .cpboard import CpBoard, CpBoardError
 from . import utils
@@ -117,7 +118,7 @@ class Device(object):
   def check_cpb(self):
     """Raises an error if the cpb object was closed."""
     if self.cpb is None:
-      raise utils.DeviceError('serial port %s closed' % self.dev_name_short)
+      raise DeviceError('serial port %s closed' % self.dev_name_short)
 
   def close(self):
     """Closes the serial port."""
@@ -147,7 +148,7 @@ class Device(object):
     except (serial.serialutil.SerialException, TypeError):
       # Write failed - assume that we got disconnected
       self.close()
-      raise utils.DeviceError('serial port %s closed' % self.dev_name_short)
+      raise DeviceError('serial port %s closed' % self.dev_name_short)
 
   def remote(self, func, *args, xfer_func=None, **kwargs):
     """Calls func with the indicated args on the CircuitPython board."""
@@ -200,7 +201,7 @@ class Device(object):
         print('------------------')
       return output
     except (serial.serialutil.SerialException, TypeError):
-      raise utils.DeviceError('serial port %s closed' % self.dev_name_short)
+      raise DeviceError('serial port %s closed' % self.dev_name_short)
     except:
       self.cpb.exit_raw_repl()
       self.close()
@@ -250,7 +251,7 @@ class Device(object):
     except (serial.serialutil.SerialException, BrokenPipeError, TypeError):
       # Write failed - assume that we got disconnected
       self.close()
-      raise utils.DeviceError('{} closed'.format(self.dev_name_short))
+      raise DeviceError('{} closed'.format(self.dev_name_short))
 
 # --- serial device   --------------------------------------------------------
 
@@ -277,7 +278,7 @@ class DeviceSerial(Device):
           wait = wait if not toggle else wait -1
         self.options.verbose and sys.stdout.write("\n")
       except KeyboardInterrupt:
-        raise utils.DeviceError('Interrupted')
+        raise DeviceError('Interrupted')
 
     self.name = port
     self.dev_name_long = '%s at %d baud' % (port, baud)
@@ -329,7 +330,7 @@ class DeviceSerial(Device):
     if connected:
       self.options.verbose and print(' connected', flush=True)
     else:
-      raise utils.DeviceError('Unable to connect to REPL')
+      raise DeviceError('Unable to connect to REPL')
 
     # In theory the serial port is now ready to use
     self.setup()
