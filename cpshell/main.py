@@ -216,59 +216,12 @@ def board_name(default):
   import board
   return repr(board.board_id)
 
-def copy_file(src_filename, dst_filename):
-  """Copies a file from one place to another. Both the source and destination
-    files must exist on the same machine.
-  """
-  try:
-    with open(src_filename, 'rb') as src_file:
-      with open(dst_filename, 'wb') as dst_file:
-        while True:
-          buf = src_file.read(BUFFER_SIZE)
-          if len(buf) > 0:
-            dst_file.write(buf)
-          if len(buf) < BUFFER_SIZE:
-            break
-    return True
-  except:
-    return False
 
 
 def eval_str(string):
   """Executes a string containing python code."""
   output = eval(string)
   return output
-
-
-def word_len(word):
-  """Returns the word length, minus any color codes."""
-  if word[0] == '\x1b':
-    return len(word) - 11   # 7 for color, 4 for no-color
-  return len(word)
-
-
-def print_cols(words, print_func, termwidth=79):
-  """Takes a single column of words, and prints it as multiple columns that
-  will fit in termwidth columns.
-  """
-  width = max([word_len(word) for word in words])
-  nwords = len(words)
-  ncols = max(1, (termwidth + 1) // (width + 1))
-  nrows = (nwords + ncols - 1) // ncols
-  for row in range(nrows):
-    for i in range(row, nwords, nrows):
-      word = words[i]
-      if word[0] == '\x1b':
-        print_func('%-*s' % (width + 11, words[i]),
-                   end='\n' if i + nrows >= nwords else ' ')
-      else:
-        print_func('%-*s' % (width, words[i]),
-                   end='\n' if i + nrows >= nwords else ' ')
-
-
-
-
-
 
 def add_arg(*args, **kwargs):
   """Returns a list containing args and kwargs."""

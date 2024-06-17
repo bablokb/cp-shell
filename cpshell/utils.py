@@ -321,167 +321,6 @@ def listdir_stat(dirname, show_hidden=True):
   return list((file, stat(dirname + '/' + file)) for file in files if is_visible(file) or show_hidden)
 
 
-def make_directory(dirname):
-  """Creates one or more directories."""
-  import os
-  try:
-    os.mkdir(dirname)
-  except:
-    return False
-  return True
-
-
-def mkdir(filename):
-  """Creates a directory."""
-  return utils.auto(make_directory, filename)
-
-
-def remove_file(filename, recursive=False, force=False):
-  """Removes a file or directory."""
-  import os
-  try:
-    mode = os.stat(filename)[0]
-    if mode & 0x4000 != 0:
-      # directory
-      if recursive:
-        for file in os.listdir(filename):
-          success = remove_file(filename + '/' + file, recursive, force)
-          if not success and not force:
-            return False
-        os.rmdir(filename) # PGH Work like Unix: require recursive
-      else:
-        if not force:
-          return False
-    else:
-      os.remove(filename)
-  except:
-    if not force:
-      return False
-  return True
-
-
-def rm(filename, recursive=False, force=False):
-  """Removes a file or directory tree."""
-  if recursive:
-    Options.get().verbose and print(f"rm -r {filename}")
-  else:
-    Options.get().verbose and print(f"rm {filename}")
-  return utils.auto(remove_file, filename, recursive, force)
-
-
-def make_dir(dst_dir, dry_run, print_func, recursed):
-  """Creates a directory. Produces information in case of dry run.
-  Issues error where necessary.
-  """
-  parent = os.path.split(dst_dir.rstrip('/'))[0] # Check for nonexistent parent
-  parent_files = utils.auto(listdir_lstat,parent,0) if parent else True # Relative dir
-  if dry_run:
-    if recursed: # Assume success: parent not actually created yet
-      print_func("Creating directory {}".format(dst_dir))
-    elif parent_files is None:
-      print_func("Unable to create {}".format(dst_dir))
-    return True
-
-  Options.get().verbose and print(f"mkdir {dst_dir}")
-  if not mkdir(dst_dir):
-    utils.print_err("Unable to create {}".format(dst_dir))
-    return False
-  return True
-
-
-def rsync(src_dir, dst_dir, mirror, dry_run, print_func, recursed, sync_hidden):
-  """Synchronizes 2 directory trees."""
-  # This test is a hack to avoid errors when accessing /flash. When the
-  # cache synchronisation issue is solved it should be removed
-  if not isinstance(src_dir, str) or not len(src_dir):
-    return
-
-  if '__pycache__' in src_dir:       # ignore __pycache__
-    return
-  sstat = utils.auto(get_stat, src_dir)
-  smode = stat_mode(sstat)
-  if mode_isfile(smode):
-    utils.print_err('Source {} is a file not a directory.'.format(src_dir))
-    return
-
-  d_src = {}  # Look up stat tuple from name in current directory
-  src_files = utils.auto(listdir_stat, src_dir, show_hidden=sync_hidden)
-  if src_files is None:
-    utils.print_err('Source directory {} does not exist.'.format(src_dir))
-    return
-  for name, stat in src_files:
-    if '__pycache__' in name:       # ignore __pycache__
-      continue
-    d_src[name] = stat
-
-  d_dst = {}
-  dst_files = utils.auto(listdir_stat, dst_dir, show_hidden=sync_hidden)
-  if dst_files is None: # Directory does not exist
-    if not make_dir(dst_dir, dry_run, print_func, recursed):
-      return
-  else: # dest exists
-    for name, stat in dst_files:
-      d_dst[name] = stat
-
-  set_dst = set(d_dst.keys())
-  set_src = set(d_src.keys())
-  to_add = set_src - set_dst  # Files to copy to dest
-  to_del = set_dst - set_src  # To delete from dest
-  to_upd = set_dst.intersection(set_src) # In both: may need updating
-
-  for src_basename in to_add:  # Name in source but absent from destination
-    src_filename = src_dir + '/' + src_basename
-    dst_filename = dst_dir + '/' + src_basename
-    if dry_run or Options.get().debug:
-      print_func("Adding %s" % dst_filename)
-    src_stat = d_src[src_basename]
-    src_mode = stat_mode(src_stat)
-    if not dry_run:
-      if not mode_isdir(src_mode):
-        cp(src_filename, dst_filename)
-    if mode_isdir(src_mode):
-      rsync(src_filename, dst_filename, mirror=mirror, dry_run=dry_run,
-            print_func=print_func, recursed=True, sync_hidden=sync_hidden)
-
-  if mirror:  # May delete
-    for dst_basename in to_del:  # In dest but not in source
-      dst_filename = dst_dir + '/' + dst_basename
-      if dry_run or Options.get().debug:
-        print_func("Removing %s" % dst_filename)
-      if not dry_run:
-        rm(dst_filename, recursive=True, force=True)
-
-  for src_basename in to_upd:  # Names are identical
-    src_stat = d_src[src_basename]
-    dst_stat = d_dst[src_basename]
-    src_filename = src_dir + '/' + src_basename
-    dst_filename = dst_dir + '/' + src_basename
-    src_mode = stat_mode(src_stat)
-    dst_mode = stat_mode(dst_stat)
-    if mode_isdir(src_mode):
-      if mode_isdir(dst_mode):
-        # src and dst are both directories - recurse
-        rsync(src_filename, dst_filename, mirror=mirror, dry_run=dry_run,
-              print_func=print_func, recursed=True, sync_hidden=sync_hidden)
-      else:
-        msg = "Source '{}' is a directory and destination " \
-              "'{}' is a file. Ignoring"
-        utils.print_err(msg.format(src_filename, dst_filename))
-    else:
-      if mode_isdir(dst_mode):
-        msg = "Source '{}' is a file and destination " \
-              "'{}' is a directory. Ignoring"
-        utils.print_err(msg.format(src_filename, dst_filename))
-      else:
-        if dry_run or Options.get().debug:
-          print_func('Checking {}'.format(dst_filename))
-        if stat_mtime(src_stat) > stat_mtime(dst_stat):
-          msg = "{} is newer than {} - copying"
-          print_func(msg.format(src_filename, dst_filename))
-          if not dry_run:
-            cp(src_filename, dst_filename)
-
-
 # rtc_time[0] - year    4 digit
 # rtc_time[1] - month   1..12
 # rtc_time[2] - day     1..31
@@ -525,6 +364,30 @@ def print_long(filename, stat, print_func):
     print_func('%6d %s %2d %02d:%02d %s' % (size, MONTH[file_mtime[1]],
                                             file_mtime[2], file_mtime[3], file_mtime[4],
                                             decorated_filename(filename, stat)))
+
+def word_len(word):
+  """Returns the word length, minus any color codes."""
+  if word[0] == '\x1b':
+    return len(word) - 11   # 7 for color, 4 for no-color
+  return len(word)
+
+def print_cols(words, print_func, termwidth=79):
+  """Takes a single column of words, and prints it as multiple columns that
+  will fit in termwidth columns.
+  """
+  width = max([word_len(word) for word in words])
+  nwords = len(words)
+  ncols = max(1, (termwidth + 1) // (width + 1))
+  nrows = (nwords + ncols - 1) // ncols
+  for row in range(nrows):
+    for i in range(row, nwords, nrows):
+      word = words[i]
+      if word[0] == '\x1b':
+        print_func('%-*s' % (width + 11, words[i]),
+                   end='\n' if i + nrows >= nwords else ' ')
+      else:
+        print_func('%-*s' % (width, words[i]),
+                   end='\n' if i + nrows >= nwords else ' ')
 
 def date():
   import time

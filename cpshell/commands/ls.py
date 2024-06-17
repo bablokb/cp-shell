@@ -104,4 +104,4 @@ class Ls(Command):
               else:
                 files.append(utils.decorated_filename(filename, stat))
       if len(files) > 0:
-        utils.print_cols(sorted(files), self.shell.print, self.columns)
+        utils.print_cols(sorted(files), self.shell.print, self.shell.columns)
