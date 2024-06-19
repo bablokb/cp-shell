@@ -97,7 +97,7 @@ def is_circuitpython_usb_port(portName):
   """Checks to see if the indicated portname is a CircuitPython device
     or not.
   """
-  for port in serial.tools.list_ports.comports():
+  for port in list_ports.comports():
     if port.device == portName:
       return is_circuitpython_usb_device(port)
   return False
@@ -164,7 +164,7 @@ def autoscan():
   """autoscan will check all of the serial ports to see if they have
     a matching VID:PID for a CircuitPython board.
   """
-  for port in serial.tools.list_ports.comports():
+  for port in list_ports.comports():
     if is_circuitpython_usb_device(port):
       connect(port[0])
 
@@ -188,7 +188,7 @@ def listports():
   """listports will display a list of all of the serial ports.
   """
   detected = False
-  for port in serial.tools.list_ports.comports():
+  for port in list_ports.comports():
     detected = True
     if port.vid:
       cpport = ''
