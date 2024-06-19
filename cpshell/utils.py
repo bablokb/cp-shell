@@ -77,34 +77,34 @@ def resolve_path(path,cur_dir):
     return '/'
   return '/'.join(new_comps)
 
-def validate_pattern(fn):
+def validate_pattern(fn,cur_dir):
   """On success return an absolute path and a pattern.
   Otherwise print a message and return None, None
   """
   directory, pattern = parse_pattern(fn)
   if directory is None:
-    utils.print_err("Invalid pattern {}.".format(fn))
+    print_err("Invalid pattern {}.".format(fn))
     return None, None
-  target = utils.resolve_path(directory)
+  target = resolve_path(directory,cur_dir)
   mode = auto(get_mode, target)
   if not mode_exists(mode):
-    utils.print_err("cannot access '{}': No such file or directory".format(fn))
+    print_err("cannot access '{}': No such file or directory".format(fn))
     return None, None
   if not mode_isdir(mode):
-    utils.print_err("cannot access '{}': Not a directory".format(fn))
+    print_err("cannot access '{}': Not a directory".format(fn))
     return None, None
   return target, pattern
 
-def process_pattern(fn):
+def process_pattern(fn,cur_dir):
   """Return a list of paths matching a pattern (or None on error).
   """
-  directory, pattern = validate_pattern(fn)
+  directory, pattern = validate_pattern(fn,cur_dir)
   if directory is not None:
     filenames = fnmatch.filter(auto(listdir, directory), pattern)
     if filenames:
       return [directory + '/' + sfn for sfn in filenames]
     else:
-      utils.print_err("cannot access '{}': No such file or directory".format(fn))
+      print_err("cannot access '{}': No such file or directory".format(fn))
 
 def auto(func, filename, *args, **kwargs):
   """If `filename` is a remote file, then this function calls func on the
@@ -294,7 +294,7 @@ def listdir_lstat(dirname, time_offset,show_hidden=True):
 
 
 @extra_funcs(is_visible, stat)
-def listdir_stat(dirname, show_hidden=True):
+def listdir_stat(dirname, time_offset, show_hidden=True):
   """Returns a list of tuples for each file contained in the named
     directory, or None if the directory does not exist. Each tuple
     contains the filename, followed by the tuple returned by
@@ -306,8 +306,8 @@ def listdir_stat(dirname, show_hidden=True):
   except OSError:
     return None
   if dirname == '/':
-    return list((file, stat('/' + file)) for file in files if is_visible(file) or show_hidden)
-  return list((file, stat(dirname + '/' + file)) for file in files if is_visible(file) or show_hidden)
+    return list((file, stat('/' + file,time_offset)) for file in files if is_visible(file) or show_hidden)
+  return list((file, stat(dirname + '/' + file,time_offset)) for file in files if is_visible(file) or show_hidden)
 
 
 # rtc_time[0] - year    4 digit

@@ -86,7 +86,7 @@ class Ls(Command):
           self.shell.print(f"{filename}:")
         pattern = '*'
       else: # A pattern was specified
-        filename, pattern = validate_pattern(fn)
+        filename, pattern = validate_pattern(fn,self.shell.cur_dir)
         if filename is None: # An error was printed
           continue
       files = []

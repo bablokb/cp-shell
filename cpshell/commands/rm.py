@@ -108,7 +108,7 @@ class Rm(Command):
       if len(filenames) > 1:
         utils.print_err("Usage: rm [-r] [-f] PATTERN")
         return
-      filenames = utils.process_pattern(sfn)
+      filenames = utils.process_pattern(sfn,self.shell.cur_dir)
       if filenames is None:
         return
 
