@@ -10,10 +10,12 @@
 # Website: https://github.com/bablokb/cp-shell
 # ----------------------------------------------------------------------------
 
-from .command import Command 
 from cpshell.options import Options
 from cpshell import utils
 from cpshell import device
+
+from .command import Command 
+from .filesize import get_filesize
 
 def cat(src_filename, dst_file):
   """Copies the contents of the indicated file to an already opened file."""
@@ -23,7 +25,7 @@ def cat(src_filename, dst_file):
       for line in txtfile:
         dst_file.write(line)
   else:
-    filesize = dev.remote_eval(utils.get_filesize, dev_filename)
+    filesize = dev.remote_eval(get_filesize, dev_filename)
     return dev.remote(utils.send_file_to_host, dev_filename, dst_file,
                       filesize, Options.get().buffer_size,
                       xfer_func=utils.recv_file_from_remote)

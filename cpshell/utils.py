@@ -145,17 +145,6 @@ def get_dev_and_path(filename):
       return (dev, dev_filename)
   return (None, filename)
 
-def get_filesize(filename):
-  """Returns the size of a file, in bytes."""
-  import os
-  try:
-    # Since this function runs remotely, it can't depend on other functions,
-    # so we can't call stat_mode.
-    return os.stat(filename)[6]
-  except OSError:
-    return -1
-
-
 def get_mode(filename):
   """Returns the mode of a file, which can be used to determine if a file
     exists, if a file is a file or a directory.
