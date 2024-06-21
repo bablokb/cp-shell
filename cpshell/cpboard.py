@@ -174,7 +174,7 @@ class CpBoard:
       raise CpBoardError('could not enter raw repl')
 
     # write command
-    pack_size = 256  # war 256
+    pack_size = 64  # war 256
     for i in range(0, len(command_bytes), pack_size):
       #print(command_bytes[i:min(i + pack_size, len(command_bytes))])
       #print("===")
