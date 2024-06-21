@@ -10,6 +10,7 @@
 # Website: https://github.com/bablokb/cp-shell
 # ----------------------------------------------------------------------------
 
+import sys
 import time
 import inspect
 import token
