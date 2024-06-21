@@ -191,7 +191,7 @@ class MainArgParser:
     # parse commandline
     self.options = self._parser.parse_args(namespace=Options.get())
     if (not len(self.options.cmd) or
-        'cp' in self.options.cmd or 'rsync' in self.options.cmd):
+        self.options.cmd[0] in ['cp','rsync','edit']):
       self.options.upd_time = True
 
     if self.options.debug:
