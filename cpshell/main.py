@@ -45,7 +45,6 @@ import os
 import re
 import select
 import socket
-import tempfile
 import time
 import threading
 from serial.tools import list_ports
