@@ -56,6 +56,9 @@ class Command:
 
   def _create_argparser(self):
     doc_lines = getattr(self, "run").__doc__.expandtabs().splitlines()
+    if not doc_lines[0]:
+      doc_lines.pop(0)
+      doc_lines[0] = "\n"+doc_lines[0]
     if '' in doc_lines:
       blank_idx = doc_lines.index('')
       usage = doc_lines[:blank_idx]
