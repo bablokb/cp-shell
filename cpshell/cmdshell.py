@@ -107,8 +107,6 @@ class CmdShell(cmd.Cmd):
     self.redirect_filename = ''
     self.redirect_mode = ''
 
-    self.quit_when_no_output = False
-    self.quit_serial_reader = False
     readline.set_completer_delims(DELIMS)
 
     self.set_prompt()
@@ -412,10 +410,8 @@ class CmdShell(cmd.Cmd):
       return
 
     if self._options.debug:
-      print(f"DEBUG: default(): {line=}")
       print(f"DEBUG: default(): {cmd=}")
       print(f"DEBUG: default(): {args=}")
-      print(f"DEBUG: default(): cmdinstance: {cmdinstance}")
 
     cmdinstance.run(args[1:])
 
