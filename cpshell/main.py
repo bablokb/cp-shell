@@ -40,11 +40,7 @@ except ImportError as err:
   print('sys.path =', sys.path)
   raise err
 
-import calendar
-import os
-import re
 import select
-import socket
 import time
 import threading
 from serial.tools import list_ports
@@ -59,8 +55,6 @@ from serial.tools import list_ports
 import platform
 USE_AUTOCONNECT = sys.platform == 'linux' and 'Microsoft' not in platform.uname().release
 
-QUIT_REPL_CHAR = 'X'
-QUIT_REPL_BYTE = bytes((ord(QUIT_REPL_CHAR) - ord('@'),))  # Control-X
 
 TIME_OFFSET = 0
 
@@ -238,25 +232,6 @@ def connect(port, baud=115200, wait=0):
     return False
   device.Device.set_device(dev)
   return True
-
-
-class AutoBool(object):
-  """A simple class which allows a boolean to be set to False in conjunction
-    with a with: statement.
-  """
-
-  def __init__(self):
-    self.value = False
-
-  def __enter__(self):
-    self.value = True
-
-  def __exit__(self, type, value, traceback):
-    self.value = False
-
-  def __call__(self):
-    return self.value
-
 
 # --- run according to options   ---------------------------------------------
 
