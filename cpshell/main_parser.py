@@ -252,4 +252,4 @@ class MainArgParser:
     elif self.options.cp_locale.split("_")[0] in CP_LOCALE:
       self.options.soft_reboot = CP_LOCALE[self.options.cp_locale.split("_")[0]]
     else:
-      self.options.soft_reboot = None
+      self.options.soft_reboot = b'soft reboot\r\n'
