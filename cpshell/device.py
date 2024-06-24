@@ -285,7 +285,7 @@ class DeviceSerial(Device):
 
     try:
       self.cpb = CpBoard(port, baudrate=baud, wait=wait,
-                    soft_reboot=self.options.soft_reboot)
+                         options=self.options)
     except CpBoardError as err:
       print(err)
       sys.exit(1)

@@ -61,8 +61,8 @@ def parse_bool(str):
   return str == '1' or str.lower() == 'true'
 
 class CpBoard:
-  def __init__(self, port, baudrate=115200, wait=0, soft_reboot=None):
-    self._soft_reboot = soft_reboot if soft_reboot else b'soft reboot\r\n'
+  def __init__(self, port, baudrate=115200, wait=0, options=None):
+    self._options = options
     import serial
     delayed = False
     self.serial = serial.Serial(baudrate=baudrate, inter_byte_timeout=1)
@@ -132,8 +132,8 @@ class CpBoard:
 
     #print("CTRL-D")
     self.serial.write(b'\x04') # ctrl-D: soft reset
-    data = self.read_until(1,self._soft_reboot,timeout=1)
-    if not data.endswith(self._soft_reboot):
+    data = self.read_until(1,self._options.soft_reboot,timeout=1)
+    if not data.endswith(self._options.soft_reboot):
       #print(data)
       raise CpBoardError('could not enter raw repl')
     # By splitting this into 2 reads, it allows boot.py to print stuff,
@@ -174,12 +174,10 @@ class CpBoard:
       raise CpBoardError('could not enter raw repl')
 
     # write command
-    pack_size = 64  # war 256
-    for i in range(0, len(command_bytes), pack_size):
-      #print(command_bytes[i:min(i + pack_size, len(command_bytes))])
-      #print("===")
-      self.serial.write(command_bytes[i:min(i + pack_size, len(command_bytes))])
-      time.sleep(0.5)
+    chunk_size = self._options.chunk_size
+    for i in range(0, len(command_bytes), chunk_size):
+      self.serial.write(command_bytes[i:min(i + chunk_size, len(command_bytes))])
+      time.sleep(self._options.chunk_wait)
     self.serial.write(b'\x04')
 
     # check if we could exec command
