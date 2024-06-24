@@ -67,11 +67,14 @@ List files on the device:
     > cpshell ls -l :/
     > cpshell ls -l :/lib
 
-Run some code on the device (use `~` instead of `;`, since the
-semicolon is a separator for cpshell-commands). The trailing `~`
-will terminate the REPL after execution.
+Run some code on the device. To prevent expansion by the os-shell
+(e.g. bash), put the whole code in quotes. Within the code, use
+`~` or `\;` as separators (a single semicolon is a separator for
+cpshell-commands and must therefore be escaped).
 
-    > cpshell repl import board ~ print(board.board_id) ~
+A trailing `~` or `;` will terminate the REPL after execution.
+
+    > cpshell repl 'import board~ print(board.board_id)~'
 
 Enter the shell:
 
@@ -81,7 +84,7 @@ Enter the shell:
 Installation
 ------------
 
-TBD
+TBD (needs pyserial and pyudev).
 
 (Basically run `python3 -m cpshell.main`).
 
