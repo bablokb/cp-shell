@@ -56,8 +56,6 @@ import platform
 USE_AUTOCONNECT = sys.platform == 'linux' and 'Microsoft' not in platform.uname().release
 
 
-TIME_OFFSET = 0
-
 def is_circuitpython_usb_device(port):
   """Checks a USB device to see if it looks like a CircuitPython device.
   """
