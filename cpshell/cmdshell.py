@@ -333,12 +333,16 @@ class CmdShell(cmd.Cmd):
       line = line.strip()
 
     # search multiple commands on the same line
+    # hide escaped semicolon from lexer
+    line = line.replace('\;','\x00')
     lexer = shlex.shlex(line)
     lexer.whitespace = ''
 
     for issemicolon, group in itertools.groupby(lexer, lambda x: x == ";"):
       if not issemicolon:
-        self.onecmd_exec("".join(group))
+        # resurrect hidden semicolon if necessary
+        single_cmd = "".join(group).replace('\x00',';')
+        self.onecmd_exec(single_cmd)
 
   def postcmd(self, stop, line):
     if self.stdout != self.smart_stdout:
@@ -410,6 +414,7 @@ class CmdShell(cmd.Cmd):
       return
 
     if self._options.debug:
+      print(f"DEBUG: default(): {line=}")
       print(f"DEBUG: default(): {cmd=}")
       print(f"DEBUG: default(): {args=}")
 
