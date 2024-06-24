@@ -50,6 +50,9 @@ class MainArgParser:
     except:
       self._buffer_size = 32
 
+    self._chunk_size = 64
+    self._chunk_wait = 0.5
+
     self._editor = (os.getenv('EDITOR') or os.getenv('CPSHELL_EDITOR') or
                        os.getenv('VISUAL') or 'vi')
 
@@ -87,7 +90,7 @@ class MainArgParser:
         dest="baud",
         action="store",
         type=int,
-        help=f"Set the baudrate used (default: {self._baud:d})",
+        help=f"Set the baudrate to use (default: {self._baud:d})",
         default=self._baud
     )
     self._parser.add_argument(
@@ -103,9 +106,27 @@ class MainArgParser:
         dest="buffer_size",
         action="store",
         type=int,
-        help="Set the low-level buffer size used for transfers "
-             "(default: {self._buffer_size}",
+        help=f"Set the low-level serial buffer size "
+             f"(default: {self._buffer_size})",
         default=self._buffer_size
+    )
+    self._parser.add_argument(
+        "--chunk-size",
+        dest="chunk_size",
+        action="store",
+        type=int,
+        help=f"Set the low-level chunk size used for transfers "
+             f"(default: {self._chunk_size})",
+        default=self._chunk_size
+    )
+    self._parser.add_argument(
+        "--chunk-wait",
+        dest="chunk_wait",
+        action="store",
+        type=float,
+        help=f"Set the wait-time in seconds between chunk transfers "
+             f"(default: {self._chunk_wait})",
+        default=self._chunk_wait
     )
     self._parser.add_argument(
         "-l", "--list",
