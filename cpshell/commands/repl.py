@@ -121,8 +121,11 @@ class Repl(Command):
       return
 
     cmds = self.parser.parse_args(args).commands
-    if cmds and cmds[-1] == '~':
-      cmds.pop()
+    if cmds and cmds[-1][-1] in ['~',';']:
+      if cmds[-1] in ['~',';']:   # ~/; is distinct word
+        cmds.pop()
+      else:
+        cmds[-1] = cmds[-1].rstrip('~;')  # remove trailing ~/;
       self._quit_when_no_output = True
     else:
       self._quit_when_no_output = False
