@@ -20,6 +20,7 @@ import serial
 
 from .cpboard import CpBoard, CpBoardError
 from . import utils
+from .options import Options
 
 def strip_source(source):
   """ Strip out comments and Docstrings from some python source code."""
@@ -78,6 +79,13 @@ class Device(object):
     cls._device.name_path = '/' + dev.name + '/'
 
   @classmethod
+  def clear_device(cls):
+    """ clear the (singleton) device """
+    if cls._device and Options.get().debug:
+      print(f"clearing {cls._device.port}")
+    cls._device = None
+
+  @classmethod
   def get_device(cls):
     """ return singleton device """
     return cls._device
@@ -126,6 +134,7 @@ class Device(object):
     if self.cpb and self.cpb.serial:
       self.cpb.serial.close()
     self.cpb = None
+    Device.clear_device()
 
   def default_board_name(self):
     return 'unknown'

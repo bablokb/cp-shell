@@ -31,6 +31,12 @@
 # tree and not from some installed version.
 
 import sys
+import traceback
+import select
+import time
+import threading
+from serial.tools import list_ports
+
 try:
   from cpshell.getch import getch
   from cpshell.version import __version__
@@ -39,11 +45,6 @@ try:
 except ImportError as err:
   print('sys.path =', sys.path)
   raise err
-
-import select
-import time
-import threading
-from serial.tools import list_ports
 
 # It turns out that just because pyudev is installed doesn't mean that
 # it can actually be used. So we only bother to try if we're running
@@ -56,43 +57,14 @@ import platform
 USE_AUTOCONNECT = sys.platform == 'linux' and 'Microsoft' not in platform.uname().release
 
 
-def is_circuitpython_usb_device(port):
-  """Checks a USB device to see if it looks like a CircuitPython device.
+def is_tty_usb_device(port):
+  """Checks a USB device to see if it looks like a tty device.
   """
   if type(port).__name__ == 'Device':
     # Assume its a pyudev.device.Device
-    if ('ID_BUS' not in port or port['ID_BUS'] != 'usb' or
-        'SUBSYSTEM' not in port or port['SUBSYSTEM'] != 'tty'):
+    if port.get('ID_BUS') != 'usb' or getattr(port,'subsystem','') != 'tty':
       return False
-    usb_id = 'usb vid:pid={}:{}'.format(port['ID_VENDOR_ID'], port['ID_MODEL_ID'])
-  else:
-    # Assume its a port from serial.tools.list_ports.comports()
-    usb_id = port[2].lower()
-  # We don't check the last digit of the PID since there are 3 possible
-  # values.
-  if usb_id.startswith('usb vid:pid=f055:980'):
-    return True
-  # Check Raspberry Pi Pico
-  if usb_id.startswith('usb vid:pid=2e8a:0005'):
-    return True
-  # Check for Teensy VID:PID
-  if usb_id.startswith('usb vid:pid=16c0:0483'):
-    return True
-  # Check for LEGO Technic Large Hub
-  if usb_id.startswith('usb vid:pid=0694:0010'):
-    return True
-  return False
-
-
-def is_circuitpython_usb_port(portName):
-  """Checks to see if the indicated portname is a CircuitPython device
-    or not.
-  """
-  for port in list_ports.comports():
-    if port.device == portName:
-      return is_circuitpython_usb_device(port)
-  return False
-
+  return True
 
 def autoconnect():
   """Sets up a thread to detect when USB devices are plugged and unplugged.
@@ -129,15 +101,13 @@ def autoconnect_thread(monitor):
       if fileno == monitor.fileno():
         usb_dev = monitor.poll()
         print('autoconnect: {} action: {}'.format(usb_dev.device_node, usb_dev.action))
-        dev = find_serial_device_by_port(usb_dev.device_node)
+        dev = device.Device.get_device()
         if usb_dev.action == 'add':
           # Try connecting a few times. Sometimes the serial port
           # reports itself as busy, which causes the connection to fail.
           for i in range(8):
-            if dev:
-              connected = connect(dev.port, dev.baud, dev.wait)
-            elif is_circuitpython_usb_device(usb_dev):
-              connected = connect(usb_dev.device_node)
+            if is_tty_usb_device(usb_dev):
+              connected = connect(usb_dev.device_node)   # will close old device
             else:
               connected = False
             if connected:
@@ -146,19 +116,20 @@ def autoconnect_thread(monitor):
         elif usb_dev.action == 'remove':
           print('')
           print("USB Serial device '%s' disconnected" % usb_dev.device_node)
-          if dev:
+          if dev and dev.port == usb_dev.device_node:
             dev.close()
+            main_options.debug and print(f"closing {dev.port}")
             break
 
-
-def autoscan():
-  """autoscan will check all of the serial ports to see if they have
-    a matching VID:PID for a CircuitPython board.
+def autoscan(debug):
+  """autoscan will connect to the first available tty-port
   """
   for port in list_ports.comports():
-    if is_circuitpython_usb_device(port):
+    try:
       connect(port[0])
-
+    except:
+      print(f"could not connect to {port[0]}")
+      debug and traceback.print_exc()
 
 def extra_info(port):
   """Collects the serial nunber and manufacturer into a string, if
@@ -182,10 +153,7 @@ def listports():
   for port in list_ports.comports():
     detected = True
     if port.vid:
-      cpport = ''
-      if is_circuitpython_usb_device(port):
-        #print(f"is_circuitpython_usb_device!")
-        cpport = ' *'
+      cpport = ' *'
       print('USB Serial Device {:04x}:{:04x}{} found @{}{}\r'.format(
             port.vid, port.pid,
             extra_info(port), port.device, cpport))
@@ -193,7 +161,6 @@ def listports():
       print('Serial Device:', port.device)
   if not detected:
     print('No serial devices detected')
-
 
 def print_bytes(byte_str):
   """Prints a string or converts bytes to a string and then prints."""
@@ -224,11 +191,12 @@ def connect(port, baud=115200, wait=0):
     'Connecting to %s (buffer-size %d)...' % (port, main_options.buffer_size))
   try:
     dev = device.DeviceSerial(main_options,port, baud, wait)
+    device.Device.set_device(dev)
+    main_options.verbose and print(f"connected to {dev.port}")
   except device.DeviceError as err:
     sys.stderr.write(str(err))
     sys.stderr.write('\n')
     return False
-  device.Device.set_device(dev)
   return True
 
 # --- run according to options   ---------------------------------------------
@@ -249,7 +217,7 @@ def run(options):
       main_options.debug and print(ex)
       raise
   else:
-    autoscan()
+    autoscan(options.debug)
   autoconnect()
 
   from .cmdshell import CmdShell
