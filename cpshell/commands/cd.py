@@ -27,6 +27,12 @@ class Cd(Command):
     """ constructor """
     super().__init__(shell,"cd")
 
+  # --- special completer   --------------------------------------------------
+
+  def complete(self,text,line,begidx,endidx):
+    """ special completer for directories. Overrides Command.complete() """
+    return self.shell.directory_complete(text, line, begidx, endidx)
+
   # --- run command   --------------------------------------------------------
 
   def run(self,args):
