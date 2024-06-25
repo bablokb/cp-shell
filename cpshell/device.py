@@ -115,15 +115,6 @@ class Device(object):
       now = self.sync_time()
       self.options.verbose and print(time.strftime('%b %d, %Y %H:%M:%S', now))
 
-    #self.options.verbose and print('Evaluating board_name ... ', end='', flush=True)
-    #self.name, messages = self.remote_eval_last(board_name, self.default_board_name())
-    #self.options.verbose and print(self.name)
-    #if (len(messages) > 0) and self.options.verbose:
-    #  print('----- Prints from board.py ----')
-    #  print(messages)
-    #  print('----')
-    #self.dev_name_short = self.name
-
   def check_cpb(self):
     """Raises an error if the cpb object was closed."""
     if self.cpb is None:
@@ -136,18 +127,12 @@ class Device(object):
     self.cpb = None
     Device.clear_device()
 
-  def default_board_name(self):
-    return 'unknown'
-
   def is_root_path(self, filename):
     """Determines if 'filename' corresponds to a directory on this device."""
     test_filename = filename + '/'
     for root_dir in self.root_dirs:
       if test_filename.startswith(root_dir):
         return True
-    return False
-
-  def is_serial_port(self, port):
     return False
 
   def read(self, num_bytes):
@@ -344,12 +329,6 @@ class DeviceSerial(Device):
     # In theory the serial port is now ready to use
     self.setup()
     self.dev_name_short = port
-
-  def default_board_name(self):
-    return 'cpboard'
-
-  def is_serial_port(self, port):
-    return self.dev_name_short == port
 
   @property
   def timeout(self):

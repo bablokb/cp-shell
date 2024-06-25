@@ -162,20 +162,6 @@ def listports():
   if not detected:
     print('No serial devices detected')
 
-def print_bytes(byte_str):
-  """Prints a string or converts bytes to a string and then prints."""
-  if isinstance(byte_str, str):
-    print(byte_str)
-  else:
-    print(str(byte_str, encoding='utf8'))
-
-def board_name(default):
-  """Returns the boards name (if available)."""
-  import board
-  return repr(board.board_id)
-
-
-
 def eval_str(string):
   """Executes a string containing python code."""
   output = eval(string)
