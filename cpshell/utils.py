@@ -19,10 +19,6 @@ import binascii
 
 from .options import Options
 
-SIX_MONTHS = 183 * 24 * 60 * 60
-MONTH = ('', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-         'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')
-
 if sys.platform == 'win32':
   EXIT_STR = 'Use the exit command to exit cpshell.'
 else:
@@ -338,82 +334,6 @@ def decorated_filename(filename, stat):
     return Options.get().py_color + filename + Options.get().end_color
   return filename
 
-
-def print_long(filename, stat, print_func):
-  """Prints detailed information about the file passed in."""
-  size = stat_size(stat)
-  mtime = stat_mtime(stat)
-  file_mtime = time.localtime(mtime)
-  curr_time = time.time()
-  if mtime > (curr_time + SIX_MONTHS) or mtime < (curr_time - SIX_MONTHS):
-    print_func('%6d %s %2d %04d  %s' % (size, MONTH[file_mtime[1]],
-                                        file_mtime[2], file_mtime[0],
-                                        decorated_filename(filename, stat)))
-  else:
-    print_func('%6d %s %2d %02d:%02d %s' % (size, MONTH[file_mtime[1]],
-                                            file_mtime[2], file_mtime[3], file_mtime[4],
-                                            decorated_filename(filename, stat)))
-
-def word_len(word):
-  """Returns the word length, minus any color codes."""
-  if word[0] == '\x1b':
-    return len(word) - 11   # 7 for color, 4 for no-color
-  return len(word)
-
-def print_cols(words, print_func, termwidth=79):
-  """Takes a single column of words, and prints it as multiple columns that
-  will fit in termwidth columns.
-  """
-  width = max([word_len(word) for word in words])
-  nwords = len(words)
-  ncols = max(1, (termwidth + 1) // (width + 1))
-  nrows = (nwords + ncols - 1) // ncols
-  for row in range(nrows):
-    for i in range(row, nwords, nrows):
-      word = words[i]
-      if word[0] == '\x1b':
-        print_func('%-*s' % (width + 11, words[i]),
-                   end='\n' if i + nrows >= nwords else ' ')
-      else:
-        print_func('%-*s' % (width, words[i]),
-                   end='\n' if i + nrows >= nwords else ' ')
-
-def date():
-  import time
-  tm = time.localtime()
-  dow = ('Mon', 'Tue', 'Web', 'Thu', 'Fri', 'Sat', 'Sun')
-  mon = ('???', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')
-  return repr('{} {} {:2d} {:02d}:{:02d}:{:02d} {}'.format(dow[tm[6]], mon[tm[1]], tm[2], tm[3], tm[4], tm[5], tm[0]))
-
-def trim(docstring):
-  """Trims the leading spaces from docstring comments.
-
-  From http://www.python.org/dev/peps/pep-0257/
-
-  """
-  if not docstring:
-    return ''
-  # Convert tabs to spaces (following the normal Python rules)
-  # and split into a list of lines:
-  lines = docstring.expandtabs().splitlines()
-  # Determine minimum indentation (first line doesn't count):
-  indent = sys.maxsize
-  for line in lines[1:]:
-    stripped = line.lstrip()
-    if stripped:
-      indent = min(indent, len(line) - len(stripped))
-  # Remove indentation (first line is special):
-  trimmed = [lines[0].strip()]
-  if indent < sys.maxsize:
-    for line in lines[1:]:
-      trimmed.append(line[indent:].rstrip())
-  # Strip off trailing and leading blank lines:
-  while trimmed and not trimmed[-1]:
-    trimmed.pop()
-  while trimmed and not trimmed[0]:
-    trimmed.pop(0)
-  # Return a single string:
-  return '\n'.join(trimmed)
 
 def is_pattern(s):
   """Return True if a string contains Unix wildcard pattern characters.

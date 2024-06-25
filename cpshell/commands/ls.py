@@ -17,6 +17,53 @@ from .command import Command
 from cpshell import utils
 from cpshell import device
 
+# --- helper functions   -----------------------------------------------------
+
+SIX_MONTHS = 183 * 24 * 60 * 60
+MONTH = ('', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+         'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')
+
+def print_long(filename, stat, print_func):
+  """Prints detailed information about the file passed in."""
+  size = utils.stat_size(stat)
+  mtime = utils.stat_mtime(stat)
+  file_mtime = time.localtime(mtime)
+  curr_time = time.time()
+  if mtime > (curr_time + SIX_MONTHS) or mtime < (curr_time - SIX_MONTHS):
+    print_func('%6d %s %2d %04d  %s' % (size, MONTH[file_mtime[1]],
+                                        file_mtime[2], file_mtime[0],
+                                        utils.decorated_filename(filename, stat)))
+  else:
+    print_func('%6d %s %2d %02d:%02d %s' % (
+      size, MONTH[file_mtime[1]],
+      file_mtime[2], file_mtime[3], file_mtime[4],
+      utils.decorated_filename(filename, stat)))
+
+def word_len(word):
+  """Returns the word length, minus any color codes."""
+  if word[0] == '\x1b':
+    return len(word) - 11   # 7 for color, 4 for no-color
+  return len(word)
+
+def print_cols(words, print_func, termwidth=79):
+  """Takes a single column of words, and prints it as multiple columns that
+  will fit in termwidth columns.
+  """
+  width = max([word_len(word) for word in words])
+  nwords = len(words)
+  ncols = max(1, (termwidth + 1) // (width + 1))
+  nrows = (nwords + ncols - 1) // ncols
+  for row in range(nrows):
+    for i in range(row, nwords, nrows):
+      word = words[i]
+      if word[0] == '\x1b':
+        print_func('%-*s' % (width + 11, words[i]),
+                   end='\n' if i + nrows >= nwords else ' ')
+      else:
+        print_func('%-*s' % (width, words[i]),
+                   end='\n' if i + nrows >= nwords else ' ')
+
+
 class Ls(Command):
 
   # --- constructor   --------------------------------------------------------
@@ -76,7 +123,7 @@ class Ls(Command):
           continue
         if not utils.mode_isdir(mode):
           if args.long:
-            utils.print_long(fn, stat, self.shell.print)
+            print_long(fn, stat, self.shell.print)
           else:
             self.shell.print(fn)
           continue
@@ -100,8 +147,8 @@ class Ls(Command):
           if utils.is_visible(filename) or args.all:
             if fnmatch.fnmatch(filename, pattern):
               if args.long:
-                utils.print_long(filename, stat, self.shell.print)
+                print_long(filename, stat, self.shell.print)
               else:
                 files.append(utils.decorated_filename(filename, stat))
       if len(files) > 0:
-        utils.print_cols(sorted(files), self.shell.print, self.shell.columns)
+        print_cols(sorted(files), self.shell.print, self.shell.columns)
