@@ -83,7 +83,7 @@ class Command:
 
   def complete(self,text,line,begidx,endidx):
     """ default completer - override if necessary """
-    return shell.filename_complete(text, line, begidx, endidx)
+    return self.shell.filename_complete(text, line, begidx, endidx)
 
   # --- run command   --------------------------------------------------------
 
