@@ -242,7 +242,7 @@ class CmdShell(cmd.Cmd):
       if abs_match.startswith(dev.name_path):
         prepend = dev.name_path[:-1]
 
-    paths = sorted(utils.auto(listdir_matches, abs_match))
+    paths = sorted(utils.auto(utils.listdir_matches, abs_match))
     for path in paths:
       path = prepend + path
       if path.startswith(strip):
@@ -386,7 +386,34 @@ class CmdShell(cmd.Cmd):
       utils.print_err(err)
       self._options.debug and traceback.print_exc()
 
-  # --- delegate do_help to our standard multiplexer   -----------------------
+  # --- list of command-names   ----------------------------------------------
+
+  def completenames(self, text, *ignored):
+    """
+    Since we don't use the do_* logic, we override matching command-names.
+    """
+
+    commands = Command.all_commands()
+    return [c for c in commands if c.startswith(text)]
+
+  # --- our own completer   --------------------------------------------------
+
+  def completedefault(self,text, line, begidx, endidx):
+    """
+    Since we don't use the do_* logic, we need our own completer for
+    commands and arguments.
+    """
+
+    cmd, _, _ = self.parseline(line)
+    try:
+      cmdinstance = Command.create(cmd,self)
+      return cmdinstance.complete(text,line,begidx,endidx)
+    except:
+      self._options.debug and print(traceback.print_exc())
+      utils.print_err("Unrecognized command:",line)
+      raise
+
+# --- delegate do_help to our standard multiplexer   -----------------------
 
   def do_help(self,line):
     self.default("help "+line)
