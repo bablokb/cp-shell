@@ -161,17 +161,21 @@ def lstat(filename,time_offset):
   try:
     # on the host, lstat won't try to follow symlinks
     rstat = os.lstat(filename)
+    return rstat
   except:
     rstat = os.stat(filename)
     print("")
-  return rstat[:7] + tuple(tim + time_offset for tim in rstat[7:])
+    return rstat[:7] + tuple(tim + time_offset for tim in rstat[7:])
 
 
 def stat(filename,time_offset):
   """Returns os.stat for a given file, adjusting the timestamps as appropriate."""
   import os
   rstat = os.stat(filename)
-  return rstat[:7] + tuple(tim + time_offset for tim in rstat[7:])
+  if hasattr(os,'lstat'):
+    return rstat
+  else:
+    return rstat[:7] + tuple(tim + time_offset for tim in rstat[7:])
 
 
 def mode_exists(mode):
