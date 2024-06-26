@@ -11,6 +11,7 @@
 # ----------------------------------------------------------------------------
 
 import time
+from datetime import datetime
 import fnmatch
 
 from .command import Command 
@@ -20,24 +21,18 @@ from cpshell import device
 # --- helper functions   -----------------------------------------------------
 
 SIX_MONTHS = 183 * 24 * 60 * 60
-MONTH = ('', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-         'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')
 
 def print_long(filename, stat, print_func):
   """Prints detailed information about the file passed in."""
   size = utils.stat_size(stat)
   mtime = utils.stat_mtime(stat)
-  file_mtime = time.localtime(mtime)
   curr_time = time.time()
+  file_dt = datetime.fromtimestamp(mtime)
+  file_pretty = utils.decorated_filename(filename, stat)
   if mtime > (curr_time + SIX_MONTHS) or mtime < (curr_time - SIX_MONTHS):
-    print_func('%6d %s %2d %04d  %s' % (size, MONTH[file_mtime[1]],
-                                        file_mtime[2], file_mtime[0],
-                                        utils.decorated_filename(filename, stat)))
+    print_func(f"{size:6d} {file_dt.strftime('%b %d %Y')} {file_pretty}")
   else:
-    print_func('%6d %s %2d %02d:%02d %s' % (
-      size, MONTH[file_mtime[1]],
-      file_mtime[2], file_mtime[3], file_mtime[4],
-      utils.decorated_filename(filename, stat)))
+    print_func(f"{size:6d} {file_dt.strftime('%b %d %H:%M')} {file_pretty}")
 
 def word_len(word):
   """Returns the word length, minus any color codes."""
