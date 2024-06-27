@@ -47,17 +47,6 @@ except ImportError as err:
   print('sys.path =', sys.path)
   raise err
 
-# It turns out that just because pyudev is installed doesn't mean that
-# it can actually be used. So we only bother to try if we're running
-# under linux.
-#
-# When running under WSL, sys.platform returns 'linux' so we do a further check
-# on 'Microsoft' in platform.uname().release to detect if we're running under WSL.
-# Currently, there is no serial port enumeration availbale under WSL.
-import platform
-USE_AUTOCONNECT = sys.platform == 'linux' and 'Microsoft' not in platform.uname().release
-
-
 def is_tty_usb_device(port):
   """Checks a USB device to see if it looks like a tty device.
   """
@@ -72,8 +61,6 @@ def autoconnect():
     If the device looks like a CircuitPython board, then it will automatically
     connect to it.
   """
-  if not USE_AUTOCONNECT:
-    return
   try:
     import pyudev
   except ImportError:
@@ -190,8 +177,8 @@ def run(options):
       main_options.debug and print(ex)
       raise
   else:
-    autoscan(options.debug)
-  autoconnect()
+    options.autoconnect and autoscan(options.debug)
+  options.autoconnect and autoconnect()
 
   from .cmdshell import CmdShell
   if options.filename:

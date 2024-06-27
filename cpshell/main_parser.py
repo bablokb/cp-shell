@@ -14,10 +14,12 @@ import sys
 import os
 import argparse
 import locale
+import platform
 
 from cpshell import ansi_colors
 from cpshell.cplocale import CP_LOCALE
 from cpshell.options import Options
+
 
 # --- Wrapper class for argparser   ------------------------------------------
 
@@ -65,6 +67,17 @@ class MainArgParser:
       self._host_locale = locale.getlocale()[0]
     except:
       self._host_locale = 'en_US'
+
+    # It turns out that just because pyudev is installed doesn't mean that
+    # it can actually be used. So we only bother to try if we're running
+    # under linux.
+    #
+    # When running under WSL, sys.platform returns 'linux' so we do a
+    # further check on 'Microsoft' in platform.uname().release to detect
+    # if we're running under WSL.
+    # Currently, there is no serial port enumeration availbale under WSL.
+    self._autoconnect = (sys.platform == 'linux' and
+                         'Microsoft' not in platform.uname().release)
 
   # --- create parser for main program   -------------------------------------
 
@@ -127,6 +140,13 @@ class MainArgParser:
         help=f"Set the wait-time in seconds between chunk transfers "
              f"(default: {self._chunk_wait})",
         default=self._chunk_wait
+    )
+    self._parser.add_argument(
+        "--no-autoconnect",
+        dest="autoconnect",
+        action="store_false",
+        help=f"don't autoconnect (default: {self._autoconnect})",
+        default=self._autoconnect
     )
     self._parser.add_argument(
         "-l", "--list",
@@ -212,13 +232,19 @@ class MainArgParser:
     # parse commandline
     self.options = self._parser.parse_args(namespace=Options.get())
     if (not len(self.options.cmd) or
-        self.options.cmd[0] in ['cp','rsync','edit']):
+        self.options.cmd[0] in ['cp','rsync','edit','date']):
       self.options.upd_time = True
 
+    if not self.options.autoconnect:
+      self.options.port = None
+
     if self.options.debug:
-      print(f"Port        = {self.options.port}")
-      print(f"Baud        = {self.options.baud}")
-      print(f"Wait        = {self.options.wait}")
+      print(f"port        = {self.options.port}")
+      print(f"baud        = {self.options.baud}")
+      print(f"wait        = {self.options.wait}")
+      print(f"chunk-size  = {self.options.chunk_size}")
+      print(f"chunk-wait  = {self.options.chunk_wait}")
+      print(f"autoconnect = {self.options.autoconnect}")
       print(f"List        = {self.options.list}")
       print(f"time        = {self.options.upd_time}")
       print(f"nocolor     = {self.options.nocolor}")
