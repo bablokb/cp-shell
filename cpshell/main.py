@@ -199,9 +199,9 @@ def run(options):
     except KeyboardInterrupt:
       print('')
 
-# --- main program   ---------------------------------------------------------
+# --- main-function   --------------------------------------------------------
 
-if __name__ == "__main__":
+def main():
   if sys.platform == 'win32':
     # This is a workaround for Windows 10/Python 3.7, that allows the
     # colorized output to work.
@@ -235,3 +235,9 @@ if __name__ == "__main__":
   finally:
     if save_settings:
       termios.tcsetattr(stdin_fd, termios.TCSANOW, save_settings)
+
+# --- main program   ---------------------------------------------------------
+
+if __name__ == "__main__":
+  # this indirection is necessary because of setuptools
+  main()
