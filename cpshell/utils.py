@@ -485,3 +485,19 @@ def send_file_to_host(src_filename, dst_file, filesize, buf_size):
     return True
   except:
     return False
+
+def connect(port, baud=115200, wait=0):
+  """Connect to a CircuitPython board via a serial port."""
+  options = Options.get()
+  options.debug and print(
+    'Connecting to %s (buffer-size %d)...' % (port,options.buffer_size))
+  try:
+    dev = device.DeviceSerial(options,port, baud, wait)
+    device.Device.set_device(dev)
+    options.verbose and print(f"connected to {dev.port}")
+  except device.DeviceError as err:
+    sys.stderr.write(str(err))
+    sys.stderr.write('\n')
+    return False
+  return True
+

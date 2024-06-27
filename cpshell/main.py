@@ -35,6 +35,7 @@ import traceback
 import select
 import time
 import threading
+import locale
 from serial.tools import list_ports
 
 try:
@@ -107,7 +108,7 @@ def autoconnect_thread(monitor):
           # reports itself as busy, which causes the connection to fail.
           for i in range(8):
             if is_tty_usb_device(usb_dev):
-              connected = connect(usb_dev.device_node)   # will close old device
+              connected = utils.connect(usb_dev.device_node)   # will close old device
             else:
               connected = False
             if connected:
@@ -126,7 +127,7 @@ def autoscan(debug):
   """
   for port in list_ports.comports():
     try:
-      connect(port[0])
+      utils.connect(port[0])
     except:
       print(f"could not connect to {port[0]}")
       debug and traceback.print_exc()
@@ -171,20 +172,6 @@ def add_arg(*args, **kwargs):
   """Returns a list containing args and kwargs."""
   return (args, kwargs)
 
-def connect(port, baud=115200, wait=0):
-  """Connect to a CircuitPython board via a serial port."""
-  main_options.debug and print(
-    'Connecting to %s (buffer-size %d)...' % (port, main_options.buffer_size))
-  try:
-    dev = device.DeviceSerial(main_options,port, baud, wait)
-    device.Device.set_device(dev)
-    main_options.verbose and print(f"connected to {dev.port}")
-  except device.DeviceError as err:
-    sys.stderr.write(str(err))
-    sys.stderr.write('\n')
-    return False
-  return True
-
 # --- run according to options   ---------------------------------------------
 
 def run(options):
@@ -198,7 +185,7 @@ def run(options):
 
   if options.port:
     try:
-      connect(options.port, baud=options.baud, wait=options.wait)
+      utils.connect(options.port, baud=options.baud, wait=options.wait)
     except Exception as ex:
       main_options.debug and print(ex)
       raise
@@ -234,6 +221,9 @@ if __name__ == "__main__":
     # See: https://stackoverflow.com/questions/12492810/python-how-can-i-make-the-ansi-escape-codes-to-work-also-in-windows
     import subprocess
     subprocess.call('', shell=True)
+
+  # set local to default from environment
+  locale.setlocale(locale.LC_ALL, '')
 
   save_settings = None
   stdin_fd = -1
