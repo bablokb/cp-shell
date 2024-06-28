@@ -115,10 +115,15 @@ def rsync(src_dir, dst_dir, mirror, dry_run, print_func, recursed, sync_hidden):
       else:
         if Options.get().debug:
           print_func('Checking {}'.format(dst_filename))
-        if utils.stat_mtime(src_stat) > utils.stat_mtime(dst_stat):
+
+        mtime_src = utils.stat_mtime(src_stat)
+        mtime_dst = utils.stat_mtime(dst_stat)
+        if Options.get().debug:
+          print_func(f"DEBUG: mtime(src)={utils.mtime_pretty(mtime_src)}")
+          print_func(f"DEBUG: mtime(dst)={utils.mtime_pretty(mtime_dst)}")
+        if mtime_src > mtime_dst:
           if dry_run or Options.get().debug:
-            msg = "{} is newer than {} - copying"
-            print_func(msg.format(src_filename, dst_filename))
+            print_func(f"{src_filename} is newer than {dst_filename} - copying")
           if not dry_run:
             cp(src_filename, dst_filename)
 
@@ -130,14 +135,14 @@ def make_dir(dst_dir, dry_run, print_func, recursed):
   parent_files = utils.auto(utils.listdir_lstat,parent,0) if parent else True # Relative dir
   if dry_run:
     if recursed: # Assume success: parent not actually created yet
-      print_func("Creating directory {}".format(dst_dir))
+      print_func(f"Creating directory {dst_dir}")
     elif parent_files is None:
-      print_func("Unable to create {}".format(dst_dir))
+      print_func(f"Unable to create {dst_dir}")
     return True
 
   Options.get().verbose and print(f"mkdir {dst_dir}")
   if not mkdir(dst_dir):
-    utils.print_err("Unable to create {}".format(dst_dir))
+    utils.print_err(f"Unable to create {dst_dir}")
     return False
   return True
 
