@@ -16,6 +16,7 @@ import time
 import inspect
 import fnmatch
 import binascii
+from datetime import datetime
 
 from .options import Options
 
@@ -201,6 +202,11 @@ def stat_size(stat):
 def stat_mtime(stat):
   """Returns the mtime field from the results returned by os.stat()."""
   return stat[8]
+
+def mtime_pretty(mtime):
+  """pretty-print mtime"""
+  dt = datetime.fromtimestamp(mtime)
+  return f"{dt.strftime('%Y-%m-%d %H:%M:%S')}"
 
 def sysname():
   """Returns the os.uname().sysname field."""
