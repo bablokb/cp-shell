@@ -47,7 +47,7 @@ class Edit(Command):
     time_offset = -time.localtime().tm_gmtoff
 
     if len(args) == 0:
-      print_err("Must provide a filename")
+      utils.print_err("Must provide a filename")
       return
     filename = utils.resolve_path(args[0],self.shell.cur_dir)
     dev, dev_filename = utils.get_dev_and_path(filename)
@@ -65,9 +65,12 @@ class Edit(Command):
         if utils.mode_exists(mode):
           Options.get().verbose and self.shell.print(f"Retrieving {filename} ...")
           cp(filename, local_filename)
-        old_stat = utils.get_stat(local_filename,time_offset)
+        old_mtime = utils.stat_mtime(utils.get_stat(local_filename,time_offset))
         if os.system("{} '{}'".format(Options.get().editor, local_filename)) == 0:
-          new_stat = utils.get_stat(local_filename,time_offset)
-          if old_stat != new_stat:
+          new_mtime = utils.stat_mtime(utils.get_stat(local_filename,time_offset))
+          if Options.get().debug:
+            print(f"DEBUG: mtime(old)={utils.mtime_pretty(old_mtime)}")
+            print(f"DEBUG: mtime(new)={utils.mtime_pretty(new_mtime)}")
+          if new_mtime > old_mtime:
             Options.get().verbose and self.shell.print(f"Updating {filename} ...")
             cp(local_filename, filename)
