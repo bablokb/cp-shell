@@ -121,22 +121,29 @@ class Cp(Command):
 
     time_offset = -time.localtime().tm_gmtoff
     args = self.parser.parse_args(args)
+    src_filenames = args.filenames[:-1]
+
     if len(args.filenames) < 2:
       utils.print_err('Missing destination file')
       return
     dst_dirname = utils.resolve_path(args.filenames[-1],self.shell.cur_dir)
+
     dst_mode = utils.auto(utils.get_mode, dst_dirname)
     d_dst = {}  # Destination directory: lookup stat by basename
     if args.recursive:
       dst_files = utils.auto(utils.listdir_stat,dst_dirname,time_offset)
       if dst_files is None:
-        err = "cp: target {} is not a directory"
-        utils.print_err(err.format(dst_dirname))
-        return
-      for name, stat in dst_files:
-        d_dst[name] = stat
-
-    src_filenames = args.filenames[:-1]
+        if utils.is_pattern(src_filenames[0]):
+          utils.print_err(f"target {dst_dirname} is not a directory")
+          return
+        if not mkdir(dst_dirname):
+          utils.print_err(f"Unable to create directory {dst_dirname}")
+          return
+        dst_mode = utils.auto(utils.get_mode, dst_dirname)
+        src_filenames[0] += '/*'
+      else:
+        for name, stat in dst_files:
+          d_dst[name] = stat
 
     # Process PATTERN
     sfn = src_filenames[0]
