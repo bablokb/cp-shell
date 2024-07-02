@@ -250,12 +250,24 @@ def listdir(dirname):
   return os.listdir(dirname)
 
 
+
 def listdir_matches(match):
   """Returns a list of filenames contained in the named directory.
     Only filenames which start with `match` will be returned.
     Directories will have a trailing slash.
   """
   import os
+
+  # local helper-class
+  def add_suffix_if_dir(filename):
+    try:
+      if (os.stat(filename)[0] & 0x4000) != 0:
+        return filename + '/'
+    except FileNotFoundError:
+      # This can happen when a symlink points to a non-existant file.
+      pass
+    return filename
+
   last_slash = match.rfind('/')
   if last_slash == -1:
     dirname = '.'
@@ -269,18 +281,9 @@ def listdir_matches(match):
     else:
       dirname = match[0:last_slash]
       result_prefix = dirname + '/'
-  def add_suffix_if_dir(filename):
-    try:
-      if (os.stat(filename)[0] & 0x4000) != 0:
-        return filename + '/'
-    except FileNotFoundError:
-      # This can happen when a symlink points to a non-existant file.
-      pass
-    return filename
-  matches = [add_suffix_if_dir(result_prefix + filename)
-             for filename in os.listdir(dirname) if filename.startswith(match_prefix)]
-  return matches
-
+  return [add_suffix_if_dir(result_prefix + filename)
+             for filename in os.listdir(dirname)
+             if filename.startswith(match_prefix)]
 
 @extra_funcs(is_visible, lstat)
 def listdir_lstat(dirname, time_offset,show_hidden=True):
