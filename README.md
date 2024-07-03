@@ -122,6 +122,6 @@ device.  Since the repl-buffer is not large, code and data needs to be
 transferred in chunks with intermittend waits from the host to the
 device. The default settings are conservative (chunk-size is 64 byte,
 wait is 0.5s). Some devices allow much larger chunk-sizes. Use the
-cpshell options `--chunk_size` and `--chunk_wait` to change the
+cpshell options `--chunk-size` and `--chunk-wait` to change the
 defaults. Wrong values will cause a hang or timeout already by small
 transfers.
