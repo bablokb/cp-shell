@@ -174,7 +174,7 @@ def run(options):
     try:
       utils.connect(options.port, baud=options.baud, wait=options.wait)
     except Exception as ex:
-      main_options.debug and print(ex)
+      options.debug and print(ex)
       raise
   else:
     options.autoconnect and autoscan(options.debug)
