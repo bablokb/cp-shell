@@ -56,7 +56,7 @@ def is_tty_usb_device(port):
       return False
   return True
 
-def autoconnect():
+def autoconnect(debug):
   """Sets up a thread to detect when USB devices are plugged and unplugged.
     If the device looks like a CircuitPython board, then it will automatically
     connect to it.
@@ -67,12 +67,13 @@ def autoconnect():
     return
   context = pyudev.Context()
   monitor = pyudev.Monitor.from_netlink(context)
-  connect_thread = threading.Thread(target=autoconnect_thread, args=(monitor,), name='AutoConnect')
+  connect_thread = threading.Thread(target=autoconnect_thread,
+                                    args=(monitor,debug,), name='AutoConnect')
   connect_thread.daemon = True
   connect_thread.start()
 
 
-def autoconnect_thread(monitor):
+def autoconnect_thread(monitor,debug):
   """Thread which detects USB Serial devices connecting and disconnecting."""
   monitor.start()
   monitor.filter_by('tty')
@@ -106,7 +107,7 @@ def autoconnect_thread(monitor):
           print("USB Serial device '%s' disconnected" % usb_dev.device_node)
           if dev and dev.port == usb_dev.device_node:
             dev.close()
-            main_options.debug and print(f"closing {dev.port}")
+            debug and print(f"closing {dev.port}")
             break
 
 def autoscan(debug):
@@ -178,7 +179,7 @@ def run(options):
       raise
   else:
     options.autoconnect and autoscan(options.debug)
-  options.autoconnect and autoconnect()
+  options.autoconnect and autoconnect(options.debug)
 
   from .cmdshell import CmdShell
   if options.filename:
