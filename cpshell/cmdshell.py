@@ -172,6 +172,14 @@ class CmdShell(cmd.Cmd):
   def real_filename_complete(self, text, line, begidx, endidx):
     """Figure out what filenames match the completion."""
 
+    if self._options.debug:
+      print(f"\nDEBUG: {text=}")
+      print(f"DEBUG: {line=}")
+      print(f"DEBUG: {begidx=}")
+      print(f"DEBUG: {endidx=}")
+
+    dev = device.Device.get_device()
+
     # line contains the full command line that's been entered so far.
     # text contains the portion of the line that readline is trying to complete
     # text should correspond to line[begidx:endidx]
@@ -201,58 +209,66 @@ class CmdShell(cmd.Cmd):
     fixed = self._unescape(line[before_match+1:begidx]) # fixed portion of the match
     match = self._unescape(line[before_match+1:endidx]) # portion to match filenames against
 
-    # We do the following to cover the case that the current directory
-    # is / and the path being entered is relative.
-    strip = ''
-    if len(match) > 0 and match[0] == '/':
-      abs_match = match
-    elif self.cur_dir == '/':
-      abs_match = self.cur_dir + match
-      strip = self.cur_dir
+    if self._options.debug:
+      print(f"DEBUG: {fixed=}")
+      print(f"DEBUG: {match=}")
+
+    # without a connected device we cannot match remote filenames
+    if match and match[0] == ':':
+      if not dev:
+        return []
+      else:
+        dev_match = True
+        match = match[1:]
     else:
-      abs_match = self.cur_dir + '/' + match
-      strip = self.cur_dir + '/'
+      dev_match = False
+
+    if match:
+      if match == '/':       # input is top-level root directory
+        abs_match = '/'
+        match_dir = '/'
+      elif match[0] == '/':   # input is absolute
+        abs_match = match
+        match_dir = abs_match.rstrip('/') + '/'
+      elif self.cur_dir in ['/',':/']:
+        abs_match = self.cur_dir + match
+        match_dir = self.cur_dir
+      else:
+        abs_match = self.cur_dir + '/' + match
+        match_dir = self.cur_dir + '/'
+    else:
+      abs_match = self.cur_dir + '/'
+      match_dir = self.cur_dir + '/'
+
+    abs_match = abs_match.rstrip(':')
+    match_dir = match_dir.rstrip(':')
+    if self._options.debug:
+      print(f"DEBUG: {abs_match=}")
+      print(f"DEBUG: {match_dir=}\n")
 
     completions = []
     prepend = ''
-    dev = device.Device.get_device()
-    if dev and abs_match.rfind('/') == 0:  # match is in the root directory
-      # This means that we're looking for matches in the root directory
-      # (i.e. abs_match is /foo and the user hit TAB).
-      # So we'll supply the matching board names as possible completions.
-      # Since they're all treated as directories we leave the trailing slash.
-      if dev.name_path.startswith(abs_match):
-        if match[0] == '/':
-          completions.append(dev.name_path)
-        else:
-          completions.append(dev.name_path[1:])
-      # Add root directories of the default device (i.e. /flash/ and /sd/)
-      if match[0] == '/':
-        completions += [
+    if dev_match and not abs_match.rfind('/'):
+      # match in the root-directory of the device
+        return [
           root_dir for root_dir in dev.root_dirs if root_dir.startswith(match)]
-      else:
-        completions += [
-          root_dir[1:] for root_dir in dev.root_dirs
-                                             if root_dir[1:].startswith(match)]
-    elif dev:
-      # This means that there are at least 2 slashes in abs_match. If one
-      # of them matches a board name then we need to remove the board
-      # name from fixed. Since the results from listdir_matches won't
-      # contain the board name, we need to prepend each of the completions.
-      if abs_match.startswith(dev.name_path):
-        prepend = dev.name_path[:-1]
+    elif dev_match:
+      # match in a subdirectory of the device
+      prepend = ':'
 
     paths = sorted(utils.auto(utils.listdir_matches, abs_match))
     for path in paths:
+      if path.startswith(match_dir):
+        path = path[len(match_dir):]
       path = prepend + path
-      if path.startswith(strip):
-        path = path[len(strip):]
       completions.append(self._escape(path.replace(fixed, '', 1)))
     return completions
 
   def directory_complete(self, text, line, begidx, endidx):
     """Figure out what directories match the completion."""
-    return [filename for filename in self.filename_complete(text, line, begidx, endidx) if filename[-1] == '/']
+    return [filename for filename in
+            self.filename_complete(text, line, begidx, endidx)
+            if filename and filename[-1] == '/']
 
   # --- parse line, handling redirection   -----------------------------------
 
