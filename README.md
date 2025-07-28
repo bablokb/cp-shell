@@ -50,9 +50,9 @@ To print all available options for cpshell, all commands or help for a
 specific command, run:
 
 
-    > cpshell -h
-    > cpshell help
-    > cpshell help rsync
+    $ cpshell -h
+    $ cpshell help
+    $ cpshell help rsync
 
 
 Basic usage examples
@@ -63,20 +63,20 @@ since the root-directory of the device is the default working directory.
 
 Copy my version of `settings.toml` to the device:
 
-    > cpshell -v cp mysettings.toml :/settings.toml
+    $ cpshell -v cp mysettings.toml :/settings.toml
 
 Print `boot_out.txt`:
 
-    > cpshell cat :/boot_out.txt
+    $ cpshell cat :/boot_out.txt
 
 Deploy source-tree (mirror-mode) from the local drive to the device:
 
-    > cpshell -v rsync -m src/ :/
+    $ cpshell -v rsync -m src/ :/
 
 List files on the device:
 
-    > cpshell ls -l :/
-    > cpshell ls -l :/lib
+    $ cpshell ls -l :/
+    $ cpshell ls -l :/lib
 
 Run some code on the device. To prevent expansion by the os-shell
 (e.g. bash), put the whole code in quotes. Within the code, use
@@ -85,11 +85,11 @@ cpshell-commands and must therefore be escaped).
 
 A trailing `~` or `\;` will terminate the REPL after execution.
 
-    > cpshell repl 'import board~ print(board.board_id)~'
+    $ cpshell repl 'import board~ print(board.board_id)~'
 
 Enter the shell:
 
-    > cpshell
+    $ cpshell
 
 
 Installation
