@@ -145,7 +145,7 @@ class MainArgParser:
         "--no-autoconnect",
         dest="autoconnect",
         action="store_false",
-        help=f"don't autoconnect (default: {self._autoconnect})",
+        help=f"don't autoconnect (default: autoconnect={self._autoconnect})",
         default=self._autoconnect
     )
     self._parser.add_argument(
