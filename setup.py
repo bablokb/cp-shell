@@ -38,7 +38,7 @@ setup(
     keywords = 'circuitpython shell',
     url = 'https://github.com/bablokb/cp-shell',
     download_url = 'https://github.com/bablokb/cp-shell',
-    packages=['cpshell'],
+    packages=['cpshell', 'cpshell/commands'],
     long_description=long_description,
     classifiers=[
         'Development Status :: 4 - Beta',
