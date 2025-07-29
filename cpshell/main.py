@@ -107,7 +107,7 @@ def autoconnect_thread(monitor,debug):
           print("USB Serial device '%s' disconnected" % usb_dev.device_node)
           if dev and dev.port == usb_dev.device_node:
             dev.close()
-            debug and print(f"closing {dev.port}")
+            utils.print_debug(f"closing {dev.port}")
             break
 
 def autoscan(debug):
@@ -117,7 +117,7 @@ def autoscan(debug):
     try:
       utils.connect(port[0])
     except:
-      print(f"could not connect to {port[0]}")
+      utils.print_err(f"could not connect to {port[0]}")
       debug and traceback.print_exc()
 
 def extra_info(port):
@@ -175,7 +175,7 @@ def run(options):
     try:
       utils.connect(options.port, baud=options.baud, wait=options.wait)
     except Exception as ex:
-      options.debug and print(ex)
+      utils.print_debug(ex)
       raise
   else:
     options.autoconnect and autoscan(options.debug)

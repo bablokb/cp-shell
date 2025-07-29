@@ -172,11 +172,10 @@ class CmdShell(cmd.Cmd):
   def real_filename_complete(self, text, line, begidx, endidx):
     """Figure out what filenames match the completion."""
 
-    if self._options.debug:
-      print(f"\nDEBUG: {text=}")
-      print(f"DEBUG: {line=}")
-      print(f"DEBUG: {begidx=}")
-      print(f"DEBUG: {endidx=}")
+    utils.print_debug(f"\nDEBUG: {text=}")
+    utils.print_debug(f"DEBUG: {line=}")
+    utils.print_debug(f"DEBUG: {begidx=}")
+    utils.print_debug(f"DEBUG: {endidx=}")
 
     dev = device.Device.get_device()
 
@@ -209,9 +208,8 @@ class CmdShell(cmd.Cmd):
     fixed = self._unescape(line[before_match+1:begidx]) # fixed portion of the match
     match = self._unescape(line[before_match+1:endidx]) # portion to match filenames against
 
-    if self._options.debug:
-      print(f"DEBUG: {fixed=}")
-      print(f"DEBUG: {match=}")
+    utils.print_debug(f"DEBUG: {fixed=}")
+    utils.print_debug(f"DEBUG: {match=}")
 
     # without a connected device we cannot match remote filenames
     if match and match[0] == ':':
@@ -242,9 +240,8 @@ class CmdShell(cmd.Cmd):
 
     abs_match = abs_match.rstrip(':')
     match_dir = match_dir.rstrip(':')
-    if self._options.debug:
-      print(f"DEBUG: {abs_match=}")
-      print(f"DEBUG: {match_dir=}\n")
+    utils.print_debug(f"DEBUG: {abs_match=}")
+    utils.print_debug(f"DEBUG: {match_dir=}\n")
 
     completions = []
     prepend = ''
@@ -298,12 +295,10 @@ class CmdShell(cmd.Cmd):
                          self.redirect_filename)
       if args[redirect_index] == '>':
         self.redirect_mode = 'w'
-        if self._options.debug:
-          print('Redirecting (write) to', self.redirect_filename)
+        utils.print_debug('Redirecting (write) to', self.redirect_filename)
       else:
         self.redirect_mode = 'a'
-        if self._options.debug:
-          print('Redirecting (append) to', self.redirect_filename)
+        utils.print_debug('Redirecting (append) to', self.redirect_filename)
       self.redirect_dev, self.redirect_filename = (
         utils.get_dev_and_path(self.redirect_filename))
       try:
@@ -333,8 +328,7 @@ class CmdShell(cmd.Cmd):
     2 - So we can strip comments
     3 - So we can track line numbers
     """
-    if self._options.debug:
-      print('Executing "%s"' % line)
+    utils.print_debug('Executing "%s"' % line)
     self.line_num += 1
     if line == "EOF" or line == 'exit':
       if cmd.Cmd.use_rawinput:
@@ -365,8 +359,7 @@ class CmdShell(cmd.Cmd):
       if self.redirect_dev is not None:
         # Redirecting to a remote device, now that we're finished the
         # command, we can copy the collected output to the remote.
-        if self._options.debug:
-          print('Copy redirected output to "%s"' % self.redirect_filename)
+        utils.print_debug('Copy redirected output to "%s"' % self.redirect_filename)
         # This belongs on the remote. Copy/append now
         filesize = self.stdout.tell()
         self.stdout.seek(0)
@@ -425,7 +418,7 @@ class CmdShell(cmd.Cmd):
       cmdinstance = Command.create(cmd,self)
       return cmdinstance.complete(text,line,begidx,endidx)
     except:
-      self._options.debug and print(traceback.print_exc())
+      self._options.debug and traceback.print_exc()
       utils.print_err("Unrecognized command:",line)
       raise
 
@@ -452,14 +445,13 @@ class CmdShell(cmd.Cmd):
     try:
       cmdinstance = Command.create(cmd,self)
     except:
-      self._options.debug and print(traceback.print_exc())
+      self._options.debug and traceback.print_exc()
       utils.print_err("Unrecognized command:",line)
       return
 
-    if self._options.debug:
-      print(f"DEBUG: default(): {line=}")
-      print(f"DEBUG: default(): {cmd=}")
-      print(f"DEBUG: default(): {args=}")
+    utils.print_debug(f"DEBUG: default(): {line=}")
+    utils.print_debug(f"DEBUG: default(): {cmd=}")
+    utils.print_debug(f"DEBUG: default(): {args=}")
 
     cmdinstance.run(args[1:])
 

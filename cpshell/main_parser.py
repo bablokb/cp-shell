@@ -239,21 +239,21 @@ class MainArgParser:
       self.options.port = None
 
     if self.options.debug:
-      print(f"port        = {self.options.port}")
-      print(f"baud        = {self.options.baud}")
-      print(f"wait        = {self.options.wait}")
-      print(f"chunk-size  = {self.options.chunk_size}")
-      print(f"chunk-wait  = {self.options.chunk_wait}")
-      print(f"autoconnect = {self.options.autoconnect}")
-      print(f"List        = {self.options.list}")
-      print(f"time        = {self.options.upd_time}")
-      print(f"nocolor     = {self.options.nocolor}")
-      print(f"Timing      = {self.options.timing}")
-      print(f"buffer_size = {self.options.buffer_size}")
-      print(f"cp_locale   = {self.options.cp_locale}")
-      print(f"quiet       = {not self.options.verbose}")
-      print(f"debug       = {self.options.debug}")
-      print(f"Cmd         = [{', '.join(self.options.cmd)}]")
+      utils.print_err(f"port        = {self.options.port}")
+      utils.print_err(f"baud        = {self.options.baud}")
+      utils.print_err(f"wait        = {self.options.wait}")
+      utils.print_err(f"chunk-size  = {self.options.chunk_size}")
+      utils.print_err(f"chunk-wait  = {self.options.chunk_wait}")
+      utils.print_err(f"autoconnect = {self.options.autoconnect}")
+      utils.print_err(f"List        = {self.options.list}")
+      utils.print_err(f"time        = {self.options.upd_time}")
+      utils.print_err(f"nocolor     = {self.options.nocolor}")
+      utils.print_err(f"Timing      = {self.options.timing}")
+      utils.print_err(f"buffer_size = {self.options.buffer_size}")
+      utils.print_err(f"cp_locale   = {self.options.cp_locale}")
+      utils.print_err(f"quiet       = {not self.options.verbose}")
+      utils.print_err(f"debug       = {self.options.debug}")
+      utils.print_err(f"Cmd         = [{', '.join(self.options.cmd)}]")
 
     if self.options.nocolor:
       self.options.dir_color = ''

@@ -82,8 +82,8 @@ class Device(object):
   @classmethod
   def clear_device(cls):
     """ clear the (singleton) device """
-    if cls._device and Options.get().debug:
-      print(f"clearing {cls._device.port}")
+    if cls._device:
+      utils.print_debug(f"clearing {cls._device.port}")
     cls._device = None
 
   @classmethod
@@ -107,9 +107,9 @@ class Device(object):
     #self.sysname = self.remote_eval(sysname)
     #utils.print_verbose(self.sysname)
 
-    self.options.debug and print('Retrieving root directories ... ', end='', flush=True)
+    utils.print_debug('Retrieving root directories ... ', end='')
     self.root_dirs = ['/{}/'.format(dir) for dir in self.remote_eval(utils.listdir, '/')]
-    self.options.debug and print(' '.join(self.root_dirs))
+    utils.print_debug(' '.join(self.root_dirs))
 
     if self.options.upd_time:
       utils.print_verbose('Setting time ... ', end='')
@@ -173,11 +173,10 @@ class Device(object):
     func_src += '  print("None")\n'
     func_src += 'else:\n'
     func_src += '  print(output)\n'
-    if self.options.debug:
-      print(
-        '----- About to send %d bytes of code to the board -----' % len(func_src))
-      print(func_src)
-      print('-----')
+    utils.print_debug(
+      '----- About to send %d bytes of code to the board -----' % len(func_src))
+    utils.print_debug(func_src)
+    utils.print_debug('-----')
     self.check_cpb()
     try:
       self.cpb.enter_raw_repl()
@@ -190,10 +189,9 @@ class Device(object):
       output, _ = self.cpb.follow(timeout=20)
       self.check_cpb()
       self.cpb.exit_raw_repl()
-      if self.options.debug:
-        print('-----Response-----')
-        print(output)
-        print('------------------')
+      utils.print_debug('-----Response-----')
+      utils.print_debug(output)
+      utils.print_debug('------------------')
       return output
     except (serial.serialutil.SerialException, TypeError):
       raise DeviceError('serial port %s closed' % self.dev_name_short)
