@@ -41,8 +41,7 @@ def extra_funcs(*funcs):
 def print_err(*args, end='\n'):
   """Similar to print, but prints to stderr.
   """
-  print(*args, end=end, file=sys.stderr)
-  sys.stderr.flush()
+  print(*args, end=end, file=sys.stderr, flush=True)
 
 def resolve_path(path,cur_dir):
   """Resolves path and converts it into an absolute path."""
