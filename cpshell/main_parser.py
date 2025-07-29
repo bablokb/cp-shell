@@ -60,8 +60,8 @@ class MainArgParser:
 
     self._color   = sys.stdout.isatty()
     self._nocolor = not self._color
-    self._debug   = False
-    self._verbose = False
+    self.debug    = False
+    self.quiet    = False
 
     try:
       self._host_locale = locale.getlocale()[0]
@@ -198,11 +198,11 @@ class MainArgParser:
         default=False
     )
     self._parser.add_argument(
-        "-v", "--verbose",
+        "-q", "--quiet",
         dest="verbose",
-        action="store_true",
-        help="Be verbose",
-        default=False
+        action="store_false",
+        help="Be quiet (default: False)",
+        default=True                       # quiet == not verbose
     )
     self._parser.add_argument(
         "-T", "--timing",
@@ -251,8 +251,8 @@ class MainArgParser:
       print(f"Timing      = {self.options.timing}")
       print(f"buffer_size = {self.options.buffer_size}")
       print(f"cp_locale   = {self.options.cp_locale}")
-      print(f"Verbose     = {self.options.verbose}")
-      print(f"Debug       = {self.options.debug}")
+      print(f"quiet       = {not self.options.verbose}")
+      print(f"debug       = {self.options.debug}")
       print(f"Cmd         = [{', '.join(self.options.cmd)}]")
 
     if self.options.nocolor:
