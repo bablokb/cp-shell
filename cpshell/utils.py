@@ -39,9 +39,19 @@ def extra_funcs(*funcs):
   return extra_funcs_decorator
 
 def print_err(*args, end='\n'):
-  """Similar to print, but prints to stderr.
-  """
+  """ Similar to print, but prints to stderr. """
   print(*args, end=end, file=sys.stderr, flush=True)
+
+def print_debug(*args, end='\n'):
+  """ Print debug-message. """
+  Options.get().debug and print(
+    *args, end=end, file=sys.stderr, flush=True)
+
+def print_verbose(*args, end='\n'):
+  """ Print verbose-message. """
+  options = Options.get()
+  (options.debug or options.verbose) and print(
+    *args, end=end, file=sys.stderr, flush=True)
 
 def resolve_path(path,cur_dir):
   """Resolves path and converts it into an absolute path."""
