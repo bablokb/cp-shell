@@ -140,7 +140,7 @@ def make_dir(dst_dir, dry_run, print_func, recursed):
       print_func(f"Unable to create {dst_dir}")
     return True
 
-  Options.get().verbose and print(f"mkdir {dst_dir}")
+  utils.print_verbose(f"mkdir {dst_dir}")
   if not mkdir(dst_dir):
     utils.print_err(f"Unable to create {dst_dir}")
     return False
@@ -215,6 +215,6 @@ class Rsync(Command):
     src_dir = utils.resolve_path(args.src_dir,self.shell.cur_dir)
     dst_dir = utils.resolve_path(args.dst_dir,self.shell.cur_dir)
     verbose = not args.quiet
-    pf = print if args.dry_run or verbose else lambda *args : None
+    pf = utils.print_err if args.dry_run or verbose else lambda *args : None
     rsync(src_dir, dst_dir, mirror=args.mirror, dry_run=args.dry_run,
          print_func=pf, recursed=False, sync_hidden=args.all)

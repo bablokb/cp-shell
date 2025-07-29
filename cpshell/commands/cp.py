@@ -45,7 +45,7 @@ def cp(src_filename, dst_filename):
   src_dev, src_dev_filename = utils.get_dev_and_path(src_filename)
   dst_dev, dst_dev_filename = utils.get_dev_and_path(dst_filename)
 
-  Options.get().verbose and print(f"cp {src_filename} {dst_filename}")
+  utils.print_verbose(f"cp {src_filename} {dst_filename}")
   if src_dev is dst_dev:
     # src and dst are either on the same remote, or both are on the host
     return utils.auto(copy_file, src_filename,

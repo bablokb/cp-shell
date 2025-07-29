@@ -103,18 +103,18 @@ class Device(object):
     """ initial setup of the device after connect """
 
     #self.sysname = ''
-    #self.options.verbose and print('Retrieving sysname ... ', end='', flush=True)
+    #utils.print_verbose('Retrieving sysname ... ', end='')
     #self.sysname = self.remote_eval(sysname)
-    #self.options.verbose and print(self.sysname)
+    #utils.print_verbose(self.sysname)
 
     self.options.debug and print('Retrieving root directories ... ', end='', flush=True)
     self.root_dirs = ['/{}/'.format(dir) for dir in self.remote_eval(utils.listdir, '/')]
     self.options.debug and print(' '.join(self.root_dirs))
 
     if self.options.upd_time:
-      self.options.verbose and print('Setting time ... ', end='', flush=True)
+      utils.print_verbose('Setting time ... ', end='')
       now = self.sync_time()
-      self.options.verbose and print(time.strftime('%b %d, %Y %H:%M:%S', now))
+      utils.print_verbose(time.strftime('%b %d, %Y %H:%M:%S', now))
 
   def check_cpb(self):
     """Raises an error if the cpb object was closed."""
@@ -261,17 +261,14 @@ class DeviceSerial(Device):
     if wait and not os.path.exists(port):
       toggle = False
       try:
-        if self.options.verbose:
-          sys.stdout.write("Waiting %d seconds for serial port '%s' to exist" % (wait, port))
-          sys.stdout.flush()
+        utils.print_verbose(
+          f"Waiting {wait} seconds for serial port {port} to appear")
         while wait and not os.path.exists(port):
-          if self.options.verbose:
-            sys.stdout.write('.')
-            sys.stdout.flush()
+          utils.print_verbose('.', end='')
           time.sleep(0.5)
           toggle = not toggle
           wait = wait if not toggle else wait -1
-        self.options.verbose and sys.stdout.write("\n")
+        utils.print_verbose('')
       except KeyboardInterrupt:
         raise DeviceError('Interrupted')
 
@@ -297,7 +294,7 @@ class DeviceSerial(Device):
     except serial.serialutil.SerialException:
       # Write failed. Now report that we're waiting and keep trying until
       # a write succeeds
-      self.options.verbose and sys.stdout.write("Waiting for transport to be connected.")
+      utils.print_verbose("Waiting for transport to be connected.")
       while True:
         time.sleep(0.5)
         try:
@@ -305,13 +302,11 @@ class DeviceSerial(Device):
           break
         except serial.serialutil.SerialException:
           pass
-        if self.options.verbose:
-          sys.stdout.write('.')
-          sys.stdout.flush()
-      self.options.verbose and sys.stdout.write('\n')
+        utils.print_verbose('.', end='')
+      utils.print_verbose('')
 
     # Send Control-C followed by CR until we get a >>> prompt
-    self.options.verbose and print('Trying to connect to REPL ', end='', flush=True)
+    utils.print_verbose('Trying to connect to REPL ', end='')
     connected = False
     for _ in range(20):
       self.cpb.serial.write(b'\x03\r')
@@ -319,11 +314,9 @@ class DeviceSerial(Device):
       if data.endswith(b'>>> '):
         connected = True
         break
-      if self.options.verbose:
-        sys.stdout.write('.')
-        sys.stdout.flush()
+      utils.print_verbose('.', end='')
     if connected:
-      self.options.verbose and print(' connected', flush=True)
+      utils.print_verbose(' connected')
     else:
       raise DeviceError('Unable to connect to REPL')
 

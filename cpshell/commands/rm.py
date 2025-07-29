@@ -45,9 +45,9 @@ def remove_file(filename, recursive=False, force=False):
 def rm(filename, recursive=False, force=False):
   """Removes a file or directory tree."""
   if recursive:
-    Options.get().verbose and print(f"rm -r {filename}")
+    utils.print_verbose(f"rm -r {filename}")
   else:
-    Options.get().verbose and print(f"rm {filename}")
+    utils.print_verbose(f"rm {filename}")
   return utils.auto(remove_file, filename, recursive, force)
 
 
