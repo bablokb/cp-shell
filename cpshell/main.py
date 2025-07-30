@@ -163,7 +163,7 @@ def add_arg(*args, **kwargs):
 # --- run according to options   ---------------------------------------------
 
 def run(options):
-  utils.print_err('Welcome to cpshell.', utils.EXIT_STR)
+  utils.print_verbose('Welcome to cpshell.', utils.EXIT_STR)
 
   if options.version:
     utils.print_err(__version__)
