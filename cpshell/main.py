@@ -64,6 +64,7 @@ def autoconnect(debug):
   try:
     import pyudev
   except ImportError:
+    utils.print_err("no pyudev-module: autoconnect inactive")
     return
   context = pyudev.Context()
   monitor = pyudev.Monitor.from_netlink(context)
@@ -71,7 +72,7 @@ def autoconnect(debug):
                                     args=(monitor,debug,), name='AutoConnect')
   connect_thread.daemon = True
   connect_thread.start()
-
+  utils.print_verbose("autoconnect active and monitoring devices")
 
 def autoconnect_thread(monitor,debug):
   """Thread which detects USB Serial devices connecting and disconnecting."""
