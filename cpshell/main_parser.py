@@ -19,6 +19,7 @@ import platform
 from cpshell import ansi_colors
 from cpshell.cplocale import CP_LOCALE
 from cpshell.options import Options
+from cpshell import utils
 
 
 # --- Wrapper class for argparser   ------------------------------------------
