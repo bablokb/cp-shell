@@ -163,6 +163,8 @@ def add_arg(*args, **kwargs):
 # --- run according to options   ---------------------------------------------
 
 def run(options):
+  utils.print_err('Welcome to cpshell.', utils.EXIT_STR)
+
   if options.version:
     utils.print_err(__version__)
     return
@@ -188,8 +190,6 @@ def run(options):
       shell.cmdloop('')
   else:
     cmd_line = ' '.join(options.cmd)
-    if cmd_line == '':
-      utils.print_err('Welcome to cpshell.', utils.EXIT_STR)
     if not device.Device.get_device():
       utils.print_verbose('')
       utils.print_verbose('No boards connected - use the connect command to add one')
