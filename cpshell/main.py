@@ -89,7 +89,7 @@ def autoconnect_thread(monitor,debug):
     for fileno, _ in events:
       if fileno == monitor.fileno():
         usb_dev = monitor.poll()
-        print('autoconnect: {} action: {}'.format(usb_dev.device_node, usb_dev.action))
+        utils.print_debug('autoconnect: {} action: {}'.format(usb_dev.device_node, usb_dev.action))
         dev = device.Device.get_device()
         if usb_dev.action == 'add':
           # Try connecting a few times. Sometimes the serial port
@@ -103,8 +103,8 @@ def autoconnect_thread(monitor,debug):
               break
             time.sleep(0.25)
         elif usb_dev.action == 'remove':
-          print('')
-          print("USB Serial device '%s' disconnected" % usb_dev.device_node)
+          utils.print_verbose('')
+          utils.print_verbose("USB Serial device '%s' disconnected" % usb_dev.device_node)
           if dev and dev.port == usb_dev.device_node:
             dev.close()
             utils.print_debug(f"closing {dev.port}")
@@ -143,13 +143,13 @@ def listports():
     detected = True
     if port.vid:
       cpport = ' *'
-      print('USB Serial Device {:04x}:{:04x}{} found @{}{}\r'.format(
+      utils.print_err('USB Serial Device {:04x}:{:04x}{} found @{}{}\r'.format(
             port.vid, port.pid,
             extra_info(port), port.device, cpport))
     else:
-      print('Serial Device:', port.device)
+      utils.print_err('Serial Device:', port.device)
   if not detected:
-    print('No serial devices detected')
+    utils.print_err('No serial devices detected')
 
 def eval_str(string):
   """Executes a string containing python code."""
@@ -164,7 +164,7 @@ def add_arg(*args, **kwargs):
 
 def run(options):
   if options.version:
-    print(__version__)
+    utils.print_err(__version__)
     return
 
   if options.list:
@@ -189,11 +189,11 @@ def run(options):
   else:
     cmd_line = ' '.join(options.cmd)
     if cmd_line == '':
-      print('Welcome to cpshell.', utils.EXIT_STR)
+      utils.print_err('Welcome to cpshell.', utils.EXIT_STR)
     if not device.Device.get_device():
-      print('')
-      print('No boards connected - use the connect command to add one')
-      print('')
+      utils.print_verbose('')
+      utils.print_verbose('No boards connected - use the connect command to add one')
+      utils.print_verbose('')
     shell = CmdShell(options)
     try:
       shell.cmdloop(cmd_line)
