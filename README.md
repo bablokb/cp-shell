@@ -21,8 +21,12 @@ Major changes compared to rshell:
 
   - remove MicroPython specific code, e.g. for connecting using telnet
   - fixes necessary for CircuitPython
+  - fixes for devices non CircuitPython devices
+  - fail fast if a connection cannot be established
+  - cpshell defaults to verbose-mode. Use `-q`/`--quiet` to supress
+    informational messages
   - removed some features to simplify the codebase
-    (e.g. cpshell only supports a single connected device)
+    (e.g. **cpshell only supports a single connected device**)
   - refactor code (multiple modules instead of a gigantic
     `main.py` with more than 3K lines)
   - removal of dead code
@@ -31,11 +35,11 @@ Major changes compared to rshell:
   - remote files all start with a simple `:`, so the chance to shoot
     yourself into the foot with `rm -fr` or `rsync` is smaller
 
-Besides these changes, there have been only cosmetic updates
-(the code of rshell is of very high quality). This also implies that
-some of the quirks of the rshell-commands still exist. One example is
-that `rsync /dir` behaves like `rsync /dir/`. This might be changed in a
-later update.
+Besides these changes, there have been only cosmetic updates (the code
+of rshell is old, but of high quality). This also implies that some of
+the quirks of rshell and the rshell-commands still exist. One example
+is that `rsync /dir` behaves like `rsync /dir/`. This might be changed
+in a later update.
 
 
 Builtin help
@@ -61,9 +65,21 @@ Basic usage examples
 Note that in all examples, the leading '/' after the ':' can be omitted,
 since the root-directory of the device is the default working directory.
 
+Cpshell will automatically try to connect to a device on one of these
+ports:
+
+  - the value of the environment variable `CP_SHELL`
+  - `/dev/ttyUSB0`
+  - `/dev/ttyACM0`
+
+You can override this with passing the port using the `-p`/`--port`
+option on the commandline. As an alternative, pass
+`--no-autoconnect`. This will take you to the shell (of cpshell). From
+there, you can use various commands including `connect`.
+
 Copy my version of `settings.toml` to the device:
 
-    $ cpshell -v cp mysettings.toml :/settings.toml
+    $ cpshell cp mysettings.toml :/settings.toml
 
 Print `boot_out.txt`:
 
@@ -71,7 +87,7 @@ Print `boot_out.txt`:
 
 Deploy source-tree (mirror-mode) from the local drive to the device:
 
-    $ cpshell -v rsync -m src/ :/
+    $ cpshell rsync -m src/ :/
 
 List files on the device:
 
@@ -87,9 +103,15 @@ A trailing `~` or `\;` will terminate the REPL after execution.
 
     $ cpshell repl 'import board~ print(board.board_id)~'
 
-Enter the shell:
+Enter the shell (first command), list all available commands and
+request help for the `connect` command and exit again:
 
     $ cpshell
+    cpshell> help
+    cpshell> help connect
+    cpshell> connect /dev/ttyACM0
+    cpshell> exit
+    $
 
 
 Installation
@@ -108,6 +130,13 @@ as root to install globally (not recommended).
 Troubleshooting
 ---------------
 
+If you have problems or cpshell seems to hang, try running in
+debug-mode (pass `-d`/`--debug` to cpshell).
+
+If a connection to the REPL fails, it might be due to a slow
+device. In this case pass e.g. `-W 4`/`--wait-repl 4` to cpshell. This
+will give the device more time to boot CircuitPython.
+
 To enter the raw REPL, cpshell will reset the device and check for the
 "`soft reboot`" message from the REPL. The exact text of this message
 depends on the locale (language) of the installed *CircuitPython
@@ -119,7 +148,7 @@ and create a PR if not.
 
 Cpshell is slow, since it uses the raw REPL to communicate with the
 device.  Since the repl-buffer is not large, code and data needs to be
-transferred in chunks with intermittend waits from the host to the
+transferred in chunks with intermittent waits from the host to the
 device. The default settings are conservative (chunk-size is 64 byte,
 wait is 0.5s). Some devices allow much larger chunk-sizes. Use the
 cpshell options `--chunk-size` and `--chunk-wait` to change the
