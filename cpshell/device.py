@@ -250,13 +250,14 @@ class Device(object):
 
 class DeviceSerial(Device):
 
-  def __init__(self,options,port,baud,wait):
+  def __init__(self,options,port,baud):
     super().__init__(options)
     self.port = port
-    self.baud = baud
-    self.wait = wait
+    self.baud = baud if baud is not None else options.baud
 
-    if wait and not os.path.exists(port):
+    # This is for explicit ports on the commandline.
+    # (with autoconnect/autoscan the port already exists)
+    if options.wait and not os.path.exists(port):
       toggle = False
       try:
         utils.print_verbose(
@@ -267,15 +268,16 @@ class DeviceSerial(Device):
           toggle = not toggle
           wait = wait if not toggle else wait -1
         utils.print_verbose('')
+        if not os.path.exists(port):
+          raise DeviceError(f"port {port} not found")
       except KeyboardInterrupt:
         raise DeviceError('Interrupted')
 
     self.name = port
-    self.dev_name_long = '%s at %d baud' % (port, baud)
+    self.dev_name_long = f"{port} at {baud} baud"
 
     try:
-      self.cpb = CpBoard(port, baudrate=baud, wait=wait,
-                         options=self.options)
+      self.cpb = CpBoard(port, baudrate=baud, options=self.options)
     except CpBoardError as err:
       print(err)
       sys.exit(1)
@@ -304,9 +306,9 @@ class DeviceSerial(Device):
       utils.print_verbose('')
 
     # Send Control-C followed by CR until we get a >>> prompt
-    utils.print_verbose('Trying to connect to REPL ', end='')
+    utils.print_verbose(f"Trying to connect to REPL of {port}", end='')
     connected = False
-    for _ in range(20):
+    for _ in range(2):
       self.cpb.serial.write(b'\x03\r')
       data = self.cpb.read_until(1, b'>>> ', timeout=0.1)
       if data.endswith(b'>>> '):
@@ -316,7 +318,8 @@ class DeviceSerial(Device):
     if connected:
       utils.print_verbose(' connected')
     else:
-      raise DeviceError('Unable to connect to REPL')
+      utils.print_verbose(' failed (no CircuitPython device?!)')
+      raise DeviceError('Connection failed')
 
     # In theory the serial port is now ready to use
     self.setup()

@@ -504,18 +504,21 @@ def send_file_to_host(src_filename, dst_file, filesize, buf_size):
   except:
     return False
 
-def connect(port, baud=115200, wait=0):
+def connect(port, baud=None, background=False):
   """Connect to a CircuitPython board via a serial port."""
   options = Options.get()
-  options.debug and print(
-    'Connecting to %s (buffer-size %d)...' % (port,options.buffer_size))
+  print_verbose(
+    f"Connecting to {port} (buffer-size {options.buffer_size})...")
   try:
-    dev = device.DeviceSerial(options,port, baud, wait)
+    dev = device.DeviceSerial(options, port, baud)
     device.Device.set_device(dev)
-    options.verbose and print(f"connected to {dev.port}")
+    print_verbose(f"Connected to {dev.port}")
+    if background:
+      print_verbose("\nPress enter for cpshell-prompt")
   except device.DeviceError as err:
-    sys.stderr.write(str(err))
-    sys.stderr.write('\n')
+    print_verbose(f"Connection to {port} failed")
+    if background:
+      print_verbose("\nPress enter for cpshell-prompt")
     return False
   return True
 

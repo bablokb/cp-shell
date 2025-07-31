@@ -93,11 +93,11 @@ def autoconnect_thread(monitor,debug):
         utils.print_debug('autoconnect: {} action: {}'.format(usb_dev.device_node, usb_dev.action))
         dev = device.Device.get_device()
         if usb_dev.action == 'add':
-          # Try connecting a few times. Sometimes the serial port
-          # reports itself as busy, which causes the connection to fail.
-          for i in range(8):
+          utils.print_verbose(f"Autoconnecting new device {usb_dev.device_node}")
+          for i in range(1):
             if is_tty_usb_device(usb_dev):
-              connected = utils.connect(usb_dev.device_node)   # will close old device
+              connected = utils.connect(
+                usb_dev.device_node,background=True)   # will close old device
             else:
               connected = False
             if connected:
@@ -176,7 +176,7 @@ def run(options):
 
   if options.port:
     try:
-      utils.connect(options.port, baud=options.baud, wait=options.wait)
+      utils.connect(options.port)
     except Exception as ex:
       utils.print_debug(ex)
       raise

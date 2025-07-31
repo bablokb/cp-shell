@@ -47,6 +47,8 @@ Or:
 import sys
 import time
 
+from . import utils
+
 stdout = sys.stdout.buffer
 
 def stdout_write_bytes(b):
@@ -61,38 +63,39 @@ def parse_bool(str):
   return str == '1' or str.lower() == 'true'
 
 class CpBoard:
-  def __init__(self, port, baudrate=115200, wait=0, options=None):
+  def __init__(self, port, baudrate, options=None, wait=None):
     self._options = options
+    wait = wait if wait is not None else (
+      options.wait if options is not None else 0)
+    baudrate = baudrate if baudrate is not None else (
+      options.baud if options is not None else 115200)
+
     import serial
-    delayed = False
     self.serial = serial.Serial(baudrate=baudrate, inter_byte_timeout=1)
 
+    utils.print_verbose(f"trying {wait}s to open {port}...", end='')
     self.serial.port = port
     for attempt in range(wait + 1):
       try:
         # Assigning the port attribute will attempt to open the port
         self.serial.open()
+        utils.print_verbose(f" done")
         break
       except (OSError, IOError): # Py2 and Py3 have different errors
         if wait == 0:
           continue
-        if attempt == 0:
-          sys.stdout.write(f'Waiting {wait} seconds for board ')
-          delayed = True
       time.sleep(1)
-      sys.stdout.write('.')
-      sys.stdout.flush()
     else:
       if delayed:
         print('')
       raise CpBoardError('failed to access ' + port)
-    if delayed:
-      print('')
 
   def close(self):
     self.serial.close()
 
   def read_until(self, min_num_bytes, ending, timeout=10, data_consumer=None):
+    old_timeout = self.serial.timeout
+    self.serial.timeout = timeout
     data = self.serial.read(min_num_bytes)
     if data_consumer:
       data_consumer(data)
@@ -111,6 +114,7 @@ class CpBoard:
         if timeout is not None and timeout_count >= 100 * timeout:
           break
         time.sleep(0.01)
+    self.serial.timeout = old_timeout
     return data
 
   def enter_raw_repl(self):
