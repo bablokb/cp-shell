@@ -306,9 +306,10 @@ class DeviceSerial(Device):
       utils.print_verbose('')
 
     # Send Control-C followed by CR until we get a >>> prompt
-    utils.print_verbose(f"Trying to connect to REPL of {port}", end='')
+    utils.print_verbose(f"Trying {options.wait_repl}s to connect to REPL of {port}", end='')
     connected = False
-    for _ in range(2):
+    start = time.monotonic()
+    while time.monotonic() < start + options.wait_repl:
       self.cpb.serial.write(b'\x03\r')
       data = self.cpb.read_until(1, b'>>> ', timeout=0.1)
       if data.endswith(b'>>> '):

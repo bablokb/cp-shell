@@ -112,8 +112,16 @@ class MainArgParser:
         dest="wait",
         type=int,
         action="store",
-        help="Seconds to wait for serial port",
+        help="Seconds to wait for serial port (default: 0)",
         default=0
+    )
+    self._parser.add_argument(
+        "-W", "--wait-repl",
+        dest="wait_repl",
+        type=float,
+        action="store",
+        help="Seconds to wait for connection with REPL (defaut: 2)",
+        default=2
     )
     self._parser.add_argument(
         "--buffer-size",
